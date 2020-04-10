@@ -1,0 +1,5 @@
+api_config:
+    client_id: "Recived via mail" 
+    client_secret: "Recived via mail" 
+    subscription_key: "Your Subscription Key" 
+    redirect_url: "Your VALID Redirect Url"
