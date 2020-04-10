@@ -85,7 +85,9 @@ python3 bticino.py
 ![Alt text](/../test/screenshots/api5.png?raw=true "Api Allow")
 
 
+## 4. HOME ASSISTANT INTEGRATION
 
+**Add my custom repository** https://github.com/andrea-mattioli/mattiols_hassio_repository
 
 
 
