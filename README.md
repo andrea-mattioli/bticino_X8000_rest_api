@@ -70,7 +70,7 @@ python3 bticino.py
 
 ![Alt text](/../test/screenshots/api3.png?raw=true "Api Allow")
 
-- **If you see yor Plant Info enjoy!!**
+- **If you see your Plant Info enjoy!!**
 
 
 ![Alt text](/../test/screenshots/api4.png?raw=true "Api Allow")
