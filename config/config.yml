@@ -1,14 +1,5 @@
 api_config:
-    client_id: 216bccf3-5e1a-4355-a03d-b0720a4f837a
-    client_secret: Uuf04QWkvpB]R@=MIOAWmE]E0g3@4tfl
-    subscription_key: f38af44bf1e8488188165be61a4c7ad7
-    redirect_url: https://homemattiols.ipctddns.com:10100/callback/
-mqtt_config:
-    mqtt_status: True
-    mqtt_broker: 192.168.1.4
-    mqtt_port: 1883 
-    mqtt_user: mqtt_user
-    mqtt_pass: MqTt_PWD 
-    mqtt_interval: 3
-    mqtt_cmd_topic: /bticino/thermostat/cmd
-    mqtt_state_topic: /bticino/thermostat/status
+    client_id: "Recived via mail" 
+    client_secret: "Recived via mail" 
+    subscription_key: "Your Subscription Key" 
+    redirect_url: "Your VALID Redirect Url"

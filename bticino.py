@@ -9,10 +9,10 @@ import time
 import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+
 def randomStringDigits(stringLength=32):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
-
 oauth2_url="https://partners-login.eliotbylegrand.com/authorize"
 token_url="https://partners-login.eliotbylegrand.com/token"
 devapi_url="https://api.developer.legrand.com/smarther/v2.0"
@@ -26,7 +26,6 @@ client_id=(cfg["api_config"]["client_id"])
 client_secret=(cfg["api_config"]["client_secret"])
 subscription_key=(cfg["api_config"]["subscription_key"])
 redirect_url=(cfg["api_config"]["redirect_url"])
-
 app = Flask(__name__)
 def check_empty_item(item):
     json_object=get_json()
@@ -84,12 +83,6 @@ def rest():
 def get_token(my_url=None):
     my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_url
     return render_template('index.html', value=my_url)
-
-def mqtt_rest():
-    code, access_token, plantid, topologyid, refresh_token = load_api_config()
-    mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid,code)
-    response = { "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity}
-    return json.dumps(response)
 
 def get_access_token(code):
     body = {
