@@ -84,6 +84,12 @@ def get_token(my_url=None):
     my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_url
     return render_template('index.html', value=my_url)
 
+def mqtt_rest():
+    code, access_token, plantid, topologyid, refresh_token = load_api_config()
+    mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid,code)
+    response = { "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity}
+    return json.dumps(response)
+
 def get_access_token(code):
     body = {
             "client_id": client_id,
