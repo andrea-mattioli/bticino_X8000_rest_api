@@ -6,8 +6,7 @@ import json
 import requests
 import yaml
 import time
-import threading
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 def randomStringDigits(stringLength=32):
@@ -175,13 +174,13 @@ def get_status(access_token,plantid,topologyid,code):
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
-def background():
-    scheduler = BlockingScheduler()
+def schedule_update_token():
+    f_refresh_token()
+    scheduler = BackgroundScheduler()
     scheduler.add_job(f_refresh_token, 'interval', minutes=50)
     scheduler.start()
 
-b = threading.Thread(name='background', target=background)
-b.start()
+schedule_update_token()
 @app.route('/callback/')
 def callback():
     code = request.args.get('code')
