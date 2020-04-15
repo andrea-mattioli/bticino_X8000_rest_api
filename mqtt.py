@@ -14,7 +14,6 @@ mqtt_port=(cfg["mqtt_config"]["mqtt_port"])
 mqtt_user=(cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(cfg["mqtt_config"]["mqtt_pass"])
 mqtt_interval=(cfg["mqtt_config"]["mqtt_interval"])
-mqtt_cmd_topic=(cfg["mqtt_config"]["mqtt_cmd_topic"])
 mqtt_state_topic=(cfg["mqtt_config"]["mqtt_state_topic"])
 flag_connected = 0
 def on_connect(mqtt_client, obj, flags, rc):
