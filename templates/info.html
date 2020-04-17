@@ -1,14 +1,21 @@
 <!doctype html>
 <html>
-<h1 style="color: #5e9ca0;">Your x8000 Product Info:</h1>
-<p><strong>Plant Name: {{val_plantname}}  </strong></p>
-<p><strong>Device Name: {{val_topologyname}} </strong></p>
-<p><strong>Device Type: {{val_topologydevice}} </strong></p>
-<h2 style="color: #5e9ca0;">Measures:</h2>
-<p><strong>Temperature: {{val_temperature}} {{val_temp_unit}}° </strong></p>
-<p><strong>Umidity: {{val_humidity}}% </strong></p>
-<p><strong>Mode: {{val_mode}} </strong></p>
-<p><strong>Function: {{val_function}} </strong></p>
-<p><strong>State: {{val_state}} </strong></p>
-<p><strong>Setpoint: {{val_setpoint}} </strong></p>
+<h1 style="color: #5e9ca0;">Measures:</h2>
+<table border="1">
+<thead><tr><th><h2 style="color: #fffff;">Name</h2></th><th><h2 style="color: #fffff;">Temperature</h2></th><th><h2 style="color: #fffff;">Umidity</h2></th><th><h2 style="color: #fffff;">Mode</h2></th><th><h2 style="color: #fffff;">Function</h2></th><th><h2 style="color: #fffff;">State</h2></th><th><h2 style="color: #fffff;">Setpoint</h2></th></tr></thead>
+<tbody>
+    {% for i in j_response %}
+            <tr>
+                <td style="text-align:center">{{ i['name'] }}</td> 
+                <td style="text-align:center">{{ i['temperature'] }}</td>
+                <td style="text-align:center">{{ i['humidity'] }}</td>
+                <td style="text-align:center">{{ i['mode'] }}</td>
+                <td style="text-align:center">{{ i['function'] }}</td>
+                <td style="text-align:center">{{ i['state'] }}</td>
+                <td style="text-align:center">{{ i['setpoint'] }}</td>
+            </tr>
+
+    {% endfor %}
+</tbody>
+</table>
 </html>

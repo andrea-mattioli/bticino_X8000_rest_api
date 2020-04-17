@@ -1,4 +1,4 @@
-from bticino import mqtt_rest
+from bticino import rest
 import paho.mqtt.client as mqtt
 import yaml
 import json
@@ -26,8 +26,7 @@ def on_disconnect():
     flag_connected = 0
 def f_get_value():
     try:
-       data=mqtt_rest()
-       print(data)
+       data=rest()
        if flag_connected == 1:
           mqtt_client.publish(mqtt_state_topic, data, 1)
        else:

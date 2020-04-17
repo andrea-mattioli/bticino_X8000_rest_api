@@ -54,13 +54,13 @@ def update_api_config_file_refresh_token(refresh_token):
     json_object=get_json()
     json_object['api_requirements']['refresh_token'] = refresh_token
     write_json(json_object)
-def update_api_config_file_plantid(plantid):
+def update_api_config_file_my_plants(my_plants):
     json_object=get_json()
-    json_object['api_requirements']['plantid'] = plantid
+    json_object['api_requirements']['my_plants'] = my_plants
     write_json(json_object)
-def update_api_config_file_topologyid(topologyid):
+def update_api_config_file_chronothermostats(chronothermostats):
     json_object=get_json()
-    json_object['api_requirements']['topologyid'] = topologyid
+    json_object['api_requirements']['chronothermostats'] = chronothermostats
     write_json(json_object)
 #end write json file
 def load_api_config():
@@ -68,26 +68,35 @@ def load_api_config():
     code = json_object['api_requirements']['code']
     access_token = json_object['api_requirements']['access_token']
     refresh_token = json_object['api_requirements']['refresh_token']
-    plantid = json_object['api_requirements']['plantid']
-    topologyid = json_object['api_requirements']['topologyid']
-    return code, access_token, plantid, topologyid, refresh_token
+    my_plants = json_object['api_requirements']['my_plants']
+    chronothermostats = json_object['api_requirements']['chronothermostats']
+    return code, access_token, my_plants, chronothermostats, refresh_token
 @app.route('/rest/', methods=['GET', 'POST'])
+def rest_api():
+    response=rest()
+    return Response(response,  mimetype='application/json')
+
 def rest():
-    code, access_token, plantid, topologyid, refresh_token = load_api_config()
-    mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid,code)
-    response = [ { "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity} ]
-    return Response(json.dumps(response),  mimetype='application/json')
+    code, access_token, my_plants, chronotermostats, refresh_token = load_api_config()
+    chronothermostats_status=[]
+    for i in chronotermostats:
+        plantid=(i)['chronothermostat']['plant']
+        topologyid=(i)['chronothermostat']['topology']
+        name=(i)['chronothermostat']['name']
+        mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid)
+        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity})
+        return chronothermostats_status
 
 @app.route('/get_code')
 def get_token(my_url=None):
     my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_url
     return render_template('index.html', value=my_url)
 
-def mqtt_rest():
-    code, access_token, plantid, topologyid, refresh_token = load_api_config()
-    mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid,code)
-    response = { "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity}
-    return json.dumps(response)
+#def mqtt_rest():
+#    code, access_token, plantid, topologyid, refresh_token = load_api_config()
+#    mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid,code)
+#    response = { "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity}
+#    return json.dumps(response)
 
 def get_access_token(code):
     body = {
@@ -103,7 +112,7 @@ def get_access_token(code):
 
 def f_refresh_token():
        if not check_empty_item("refresh_token"):
-          code, access_token, plantid, topologyid, refresh_token = load_api_config()
+          code, access_token, my_plants, chronothermostats, refresh_token = load_api_config()
           body = {
                   "client_id": client_id,
                   "grant_type": "refresh_token",
@@ -125,31 +134,35 @@ def get_plants(access_token):
     try:
         response = requests.request("GET", devapi_url+"/plants", data = payload, headers = headers)
         plants = json.loads(response.text)['plants']
+        my_plants=[]
         for plan in plants:
-            plantid=(plan['id'])
-            plantname=(plan['name'])
-        return plantid,plantname
+            my_plants.append(plan['id'])
+        return my_plants
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
-def get_topology(access_token,plantid):
+def get_topology(access_token,my_plants):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key ,
         'Authorization': 'Bearer '+access_token,
     }
     payload = ''
     try:
-        response = requests.request("GET", devapi_url+"/plants/"+plantid+"/topology", data = payload, headers = headers)
-        topologys = json.loads(response.text)['plant']['modules']
-        for topology in topologys:
-            topologyid=(topology['id'])
-            topologyname=(topology['name'])
-            topologydevice=(topology['device'])
-        return topologyid,topologyname,topologydevice
+        chronothermostats=[]
+        for plant in my_plants:
+            response = requests.request("GET", devapi_url+"/plants/"+plant+"/topology", data = payload, headers = headers)
+            topologys = json.loads(response.text)['plant']['modules']
+            plant_r = json.loads(response.text)['plant']['id']
+            if plant == plant_r:
+               for topology in topologys:
+                   topologyid=(topology['id'])
+                   topologyname=(topology['name'])
+                   chronothermostats.append({"chronothermostat":{"plant":plant, "topology":topologyid, "name":topologyname}})
+        return chronothermostats
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
-def get_status(access_token,plantid,topologyid,code):
+def get_status(access_token,plantid,topologyid):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key ,
         'Authorization': 'Bearer '+access_token,
@@ -186,15 +199,15 @@ def callback():
     code = request.args.get('code')
     access_token, refresh_token = get_access_token(code)
     if access_token != None and refresh_token != None:
-       plantid,plantname=get_plants(access_token)
-       topologyid,topologyname,topologydevice=get_topology(access_token,plantid)
-       mode,function,state,setpoint,temperature,temp_unit,humidity=get_status(access_token,plantid,topologyid,code)
+       my_plants=get_plants(access_token)
+       chronothermostats=get_topology(access_token,my_plants)
        update_api_config_file_code(code)
        update_api_config_file_access_token(access_token)
        update_api_config_file_refresh_token(refresh_token)
-       update_api_config_file_plantid(plantid)
-       update_api_config_file_topologyid(topologyid)
-       return render_template('info.html', val_plantname=plantname, val_topologyname=topologyname, val_topologydevice=topologydevice, val_mode=mode, val_function=function, val_state=state, val_setpoint=setpoint, val_temperature=temperature, val_temp_unit=temp_unit, val_humidity=humidity)
+       update_api_config_file_my_plants(my_plants)
+       update_api_config_file_chronothermostats(chronothermostats)
+       my_value_tamplate=rest()
+       return render_template('info.html', j_response=my_value_tamplate)
     else:
        return "something went wrong"
 
