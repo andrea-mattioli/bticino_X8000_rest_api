@@ -2,17 +2,20 @@
 <html>
 <h1 style="color: #5e9ca0;">Measures:</h2>
 <table border="1">
-<thead><tr><th><h2 style="color: #fffff;">Name</h2></th><th><h2 style="color: #fffff;">Temperature</h2></th><th><h2 style="color: #fffff;">Umidity</h2></th><th><h2 style="color: #fffff;">Mode</h2></th><th><h2 style="color: #fffff;">Function</h2></th><th><h2 style="color: #fffff;">State</h2></th><th><h2 style="color: #fffff;">Setpoint</h2></th></tr></thead>
+<thead><tr><th><h2 style="color: #fffff;">Name</h2></th><th><h2 style="color: #fffff;">Temperature</h2></th><th><h2 style="color: #fffff;">Umidity</h2></th><th><h2 style="color: #fffff;">Mode</h2></th><th><h2 style="color: #fffff;">Function</h2></th><th><h2 style="color: #fffff;">State</h2></th><th><h2 style="color: #fffff;">Setpoint</h2></th><th><h2 style="color: #fffff;">C2C Subscription</h2></th><th><h2 style="color: #fffff;">MQTT Staus Topic</h2></th><th><h2 style="color: #fffff;">MQTT Command Topic</h2></th></tr></thead>
 <tbody>
     {% for i in j_response %}
             <tr>
-                <td style="text-align:center">{{ i['name'] }}</td> 
+                <td style="text-align:center">{{ i['name'] }}</td>
                 <td style="text-align:center">{{ i['temperature'] }}</td>
                 <td style="text-align:center">{{ i['humidity'] }}</td>
                 <td style="text-align:center">{{ i['mode'] }}</td>
                 <td style="text-align:center">{{ i['function'] }}</td>
                 <td style="text-align:center">{{ i['state'] }}</td>
                 <td style="text-align:center">{{ i['setpoint'] }}</td>
+                <td style="text-align:center">{{ i['c2c-subscription'] }}</td>
+		<td style="text-align:center">{{ i['mqtt_status_topic'] }}</td>
+		<td style="text-align:center">{{ i['mqtt_cmd_topic'] }}</td>
             </tr>
 
     {% endfor %}
