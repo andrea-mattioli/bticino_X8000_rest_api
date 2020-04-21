@@ -9,7 +9,6 @@ mqtt_broker=(cfg["mqtt_config"]["mqtt_broker"])
 mqtt_port=(cfg["mqtt_config"]["mqtt_port"])
 mqtt_user=(cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(cfg["mqtt_config"]["mqtt_pass"])
-mqtt_interval=(cfg["mqtt_config"]["mqtt_interval"])
 flag_connected = 0
 def on_connect(mqtt_client, obj, flags, rc):
     global flag_connected
