@@ -6,10 +6,12 @@ import json
 import requests
 import yaml
 import time
+import threading
+from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import paho.mqtt.client as mqtt
 def randomStringDigits(stringLength=32):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
@@ -19,8 +21,11 @@ devapi_url="https://api.developer.legrand.com/smarther/v2.0"
 thermo_url=devapi_url+"/chronothermostat/thermoregulation/addressLocation"
 state=randomStringDigits()
 config_file = 'config/config.yml'
+mqtt_config_file = 'config/mqtt_config.yml'
 api_config_file = 'config/smarter.json'
 subscribe_c2c=False
+flag_connected = 0
+mqtt_client = mqtt.Client(client_id="C2C_Subscription")
 
 with open(config_file, 'r') as f:
     cfg = yaml.safe_load(f)
@@ -31,6 +36,15 @@ redirect_url=(cfg["api_config"]["redirect_url"])
 api_user=(cfg["api_config"]["api_user"])
 api_pass=(cfg["api_config"]["api_pass"])
 subscribe_c2c=(cfg["api_config"]["subscribe_c2c"])
+
+with open(mqtt_config_file, 'r') as nf:
+    mqtt_cfg = yaml.safe_load(nf)
+mqtt_broker=(mqtt_cfg["mqtt_config"]["mqtt_broker"])
+mqtt_port=(mqtt_cfg["mqtt_config"]["mqtt_port"])
+mqtt_user=(mqtt_cfg["mqtt_config"]["mqtt_user"])
+mqtt_pass=(mqtt_cfg["mqtt_config"]["mqtt_pass"])
+mqtt_interval=(mqtt_cfg["mqtt_config"]["mqtt_interval"])
+
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 
@@ -275,14 +289,75 @@ def schedule_update_token():
     scheduler = BackgroundScheduler()
     scheduler.add_job(f_refresh_token, 'interval', minutes=50)
     scheduler.start()
-
 schedule_update_token()
+
+def b_mqtt(mqtt_status_topic, data):
+    def on_connect(mqtt_client, obj, flags, rc):
+        global flag_connected
+        flag_connected = 1
+        mqtt_client.publish(mqtt_status_topic, data, 1)
+        mqtt_client.disconnect()
+        if rc != 0:
+            raise Gmqtt.MQTTException(paho.connack_string(rc))
+    def on_disconnect():
+        print("client disconnected")
+        global flag_connected
+        flag_connected = 0
+    def on_publish(mqtt_client, userdata, mid):
+        print("Message Published...")
+    def client_init():
+        mqtt_client.username_pw_set(mqtt_user,mqtt_pass)
+        mqtt_client.on_connect = on_connect
+        mqtt_client.on_publish = on_publish
+        mqtt_client.on_disconnect = on_disconnect
+        mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+    def background():
+        client_init()
+        mqtt_client.loop_forever()
+    b = threading.Thread(name='background', target=background)
+    b.start()
+
+def mqtt_get_value():
+    data=rest()
+    for i in data:
+        mqtt_status_topic=(i['mqtt_status_topic'])
+    b_mqtt(mqtt_status_topic,data)
+    
+def mqtt_scheduler():
+    mqtt_get_value()
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(mqtt_get_value, 'interval', minutes=mqtt_interval)
+    scheduler.start()
+if not subscribe_c2c:
+   mqtt_scheduler()
+
 @app.route('/callback/', methods=['GET', 'POST'])
 def callback():
     if request.method == 'POST':
-       from mqtt import send_mqtt_values 
+       chronothermostats_stored=load_api_config_arg("chronothermostats")
        for j in json.loads(request.data):
-           send_mqtt_values(j['data'])
+           c2c_response=(j['data'])
+           for c in chronothermostats_stored:
+               topology=c['chronothermostat']['topology']
+               name=c['chronothermostat']['name']
+               mqtt_status_topic=c['chronothermostat']['mqtt_status_topic']
+               for chronothermostat in c2c_response['chronothermostats']:
+                   if topology == chronothermostat['sender']['plant']['module']['id']:
+                      function=(chronothermostat['function'])
+                      mode=(chronothermostat['mode'])
+                      state=(chronothermostat['loadState'])
+                      setpoint=(chronothermostat['setPoint']['value'])
+                      programs=(chronothermostat['programs'])
+                      for prog in programs:
+                          program = prog['number']
+                      thermometers=(chronothermostat['thermometer']['measures'])
+                      for thermometer in thermometers:
+                          temperature = thermometer['value']
+                      hygrometers=(chronothermostat['hygrometer']['measures'])
+                      for hygrometer in hygrometers:
+                          humidity = hygrometer['value']
+                      data = json.dumps({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "humidity" : humidity, "program": program})
+                      b_mqtt(mqtt_status_topic,data)
        return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
     else:
         code = request.args.get('code')
