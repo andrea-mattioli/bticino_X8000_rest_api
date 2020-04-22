@@ -7,6 +7,7 @@ import requests
 import yaml
 import time
 import threading
+import os
 from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_httpauth import HTTPBasicAuth
@@ -125,6 +126,26 @@ def rest_api():
 def info():
     my_value_tamplate=rest()
     return render_template('info.html', j_response=my_value_tamplate)
+
+def make_tree(path):
+    tree = dict(name=os.path.basename(path), children=[])
+    try: lst = os.listdir(path)
+    except OSError:
+        pass #ignore errors
+    else:
+        for name in lst:
+            fn = os.path.join(path, name)
+            if os.path.isdir(fn):
+                tree['children'].append(make_tree(fn))
+            else:
+                tree['children'].append(dict(name=name))
+    return tree
+
+@app.route('/file_conf')
+@auth.login_required
+def dirtree():
+    document = open(api_config_file, 'r')
+    return Response(document, mimetype='text/plain')
 
 def rest():
     #code, access_token, my_plants, chronothermostats, refresh_token = load_api_config()
