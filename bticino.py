@@ -127,20 +127,6 @@ def info():
     my_value_tamplate=rest()
     return render_template('info.html', j_response=my_value_tamplate)
 
-def make_tree(path):
-    tree = dict(name=os.path.basename(path), children=[])
-    try: lst = os.listdir(path)
-    except OSError:
-        pass #ignore errors
-    else:
-        for name in lst:
-            fn = os.path.join(path, name)
-            if os.path.isdir(fn):
-                tree['children'].append(make_tree(fn))
-            else:
-                tree['children'].append(dict(name=name))
-    return tree
-
 @app.route('/file_conf')
 @auth.login_required
 def dirtree():
@@ -152,16 +138,16 @@ def rest():
     access_token=load_api_config_arg("access_token")
     chronothermostats=load_api_config_arg("chronothermostats")
     chronothermostats_status=[]
-    for i in chronothermostats:
-        plantid=(i)['chronothermostat']['plant']
-        topologyid=(i)['chronothermostat']['topology']
-        name=(i)['chronothermostat']['name']
-        c2c=(i)['chronothermostat']['c2c']
-        mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']
-        mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']
+    for i in chronothermostats:                                                         
+        plantid=(i)['chronothermostat']['plant']                                        
+        topologyid=(i)['chronothermostat']['topology']                                  
+        name=(i)['chronothermostat']['name']                                            
+        c2c=(i)['chronothermostat']['c2c']                                              
+        mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']                  
+        mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']                        
         mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid)
         chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
-        return chronothermostats_status
+    return chronothermostats_status
 
 @app.route('/get_code')
 @auth.login_required
