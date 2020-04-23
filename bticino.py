@@ -303,6 +303,7 @@ def b_mqtt(mqtt_status_topic, data):
         global flag_connected
         flag_connected = 1
         mqtt_client.publish(mqtt_status_topic, data, 1)
+        time.sleep(1)
         mqtt_client.disconnect()
         if rc != 0:
             raise Gmqtt.MQTTException(paho.connack_string(rc))
@@ -341,6 +342,7 @@ if not subscribe_c2c:
 @app.route('/callback/', methods=['GET', 'POST'])
 def callback():
     if request.method == 'POST':
+       print(request.data)
        chronothermostats_stored=load_api_config_arg("chronothermostats")
        for j in json.loads(request.data):
            c2c_response=(j['data'])
