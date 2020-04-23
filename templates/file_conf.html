@@ -22,7 +22,7 @@
         </div>
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Home</a></li>
+            <li class="active"><a href="/">Home</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -30,16 +30,24 @@
 
     <div class="container-fluid">
         <div class="jumbotron">
-            <h1>Bticino Rest API</h1>
+            <h4>Smarter Config File:</h4>
+            
+                <p style="font-size:11px;text-align:left"> {{ smarter_f_conf }} </p>
+            
+        </div>
+		<div class="jumbotron">
+            <h4>Mqtt Config File:</h4>
             <div class="btn-group btn-group-justified">
-                <a href="{{ code_url }}" class="btn btn-lg btn-danger">Get your code</a>
-                <a href="/info" class="btn btn-lg btn-danger">Thermostats Info</a>
-                <a href="/file_conf" class="btn btn-lg btn-danger">Your Config File</a>
+                <p style="font-size:11px"> {{ mqtt_f_conf }} </p>
             </div>
         </div>
-
-
-       </div>
+	    <div class="jumbotron">
+            <h4>API Config File:</h4>
+            <div class="btn-group btn-group-justified">
+                <p style="font-size:11px"> {{ api_f_conf }} </p>
+            </div>
+        </div>
+    </div>
 
     </div>
 
