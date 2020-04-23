@@ -306,7 +306,7 @@ def schedule_update_token():
 schedule_update_token()
 
 def b_mqtt(mqtt_status_topic, data):
-    subprocess.call(["mosquitto_pub", "-h", str(mqtt_broker), "-p", str(mqtt_port), "-u", str(mqtt_user), "-P", str(mqtt_pass), "-m", data, "-t", str(mqtt_status_topic)])
+    subprocess.call(["mosquitto_pub", "-h", str(mqtt_broker), "-p", str(mqtt_port), "-u", str(mqtt_user), "-P", str(mqtt_pass), "-m", data, "-t", str(mqtt_status_topic), "-i", "C2C_Subscription"])
 
 def mqtt_get_value():
     data=rest()
