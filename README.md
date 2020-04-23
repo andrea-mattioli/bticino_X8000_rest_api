@@ -35,7 +35,7 @@ First Reply Url = https://myWebServerIP:myWebServerPort/callback
 ## 2. API CONFIGURATION
 
 ### 2.1. Install Requirements
-- python3 pip3
+- python3 pip3 mosquitto-clients
 
 - To install **Api Requirements** run:
   ```
