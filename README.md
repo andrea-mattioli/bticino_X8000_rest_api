@@ -43,20 +43,25 @@ First Reply Url = https://myWebServerIP:myWebServerPort/callback
   ```
 
 ### 2.2. Update your config.yml
-client_id: "Recived via mail"<br>
-client_secret: "Recived via mail"<br>
-subscription_key: "Your Subscription Key"<br>
-redirect_url: "Your VALID Redirect Url"<br>
-
+```
+api_config:
+    client_id: "Recived via mail"
+    client_secret: "Recived via mail"
+    subscription_key: "Your Subscription Key"
+    redirect_url: "Your VALID Redirect Url"
+    api_user: "Chose your api user"
+    api_pass: "Chose your api password"
+    subscribe_c2c: "True|False Use to receive thermostat status from Legrand (Safe 500 query/day)"
+```
 ### 2.3. Nat API port:5588 on your router/firewall (Only for the first Oauth)
-
+N.B Use a valid ssl certificate for path "/callback" you can do it with nginx or apache reverse proxy
 ## 3. API START
 ### 3.1. Run app
 ```
 python3 bticino.py
 ```
 ### 3.2. 1st RUN
-- Navigate to http://my_api_ip:5588/get_code and click ***get your code***
+- Navigate to http://my_api_ip:5588/ and click ***get your code***
 
 ![Alt text](/../test/screenshots/api1.png?raw=true "Api Allow")
 
@@ -75,11 +80,11 @@ python3 bticino.py
 
 ![Alt text](/../test/screenshots/api4.png?raw=true "Api Allow")
 
-### 3.3. Request Thermostat status
+### 3.3. Request Thermostats status
 
 - **Navigate to http://my_api_ip:5588/rest**
 
-**ll return a json with the status of your thermostat!**
+**ll return a json with the status of your thermostats!**
 
 
 ![Alt text](/../test/screenshots/api5.png?raw=true "Api Allow")
