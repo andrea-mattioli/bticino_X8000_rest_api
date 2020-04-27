@@ -8,11 +8,15 @@ import yaml
 import time
 import threading
 import os
+import re
+import sys
+import shutil
 from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 import subprocess
+from pathlib import Path
 def randomStringDigits(stringLength=32):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
@@ -23,10 +27,25 @@ thermo_url=devapi_url+"/chronothermostat/thermoregulation/addressLocation"
 state=randomStringDigits()
 config_file = 'config/config.yml'
 mqtt_config_file = 'config/mqtt_config.yml'
-api_config_file = 'config/smarter.json'
+api_config_file = ''
+tmp_api_config_file = 'config/smarter.json'
+static_api_config_file = 'config/.bticino_smarter/smarter.json'
 subscribe_c2c=False
+use_ssl=False
 flag_connected = 0
 
+def check_config_file():
+    global api_config_file
+    Path("config/.bticino_smarter/").mkdir(parents=True, exist_ok=True)
+    if not os.path.exists(static_api_config_file) or os.path.getsize(static_api_config_file) == 0:
+       api_config_file = 'config/smarter.json'
+       return True
+    else:
+       api_config_file = 'config/.bticino_smarter/smarter.json'
+       return False
+
+check_config_file()
+    
 with open(config_file, 'r') as f:
     cfg = yaml.safe_load(f)
 client_id=(cfg["api_config"]["client_id"])
@@ -36,6 +55,8 @@ redirect_url=(cfg["api_config"]["redirect_url"])
 api_user=(cfg["api_config"]["api_user"])
 api_pass=(cfg["api_config"]["api_pass"])
 subscribe_c2c=(cfg["api_config"]["subscribe_c2c"])
+use_ssl=(cfg["api_config"]["use_ssl"])
+dns = re.sub(r'(.*://)?([^:?]+).*', '\g<2>', redirect_url)
 
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
@@ -495,10 +516,38 @@ def callback():
            update_api_config_file_refresh_token(refresh_token)
            update_api_config_file_my_plants(my_plants)
            update_api_config_file_chronothermostats(chronothermostats)
+           if check_config_file():
+              shutil.move(os.path.join(tmp_api_config_file), os.path.join(static_api_config_file))
+           check_config_file()
            my_value_tamplate=rest()
            return render_template('info.html', j_response=my_value_tamplate)
         else:
            return "something went wrong"
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5588)
+    def find_cert():
+        try:
+           certs = []
+           for path in Path('/ssl/').rglob('fullchain.pem'):
+               ps = subprocess.Popen(["openssl", "x509", "-noout", "-text", "-in", str(path)], stdout=subprocess.PIPE)
+               output = subprocess.check_output(["grep", "-i", "DNS"], stdin=ps.stdout)
+               if dns in str(output):
+                  certs.append(path)
+           system_cert = max(certs, key=os.path.getctime)
+           system_cert_path = os.path.dirname(system_cert)
+           ps = subprocess.Popen(["openssl", "x509", "-noout", "-modulus", "-in", str(system_cert)], stdout=subprocess.PIPE)
+           md5_cert = subprocess.check_output(["openssl", "md5"], stdin=ps.stdout)
+           for key in Path(os.path.dirname(system_cert)).rglob('privkey.pem'):
+               ps = subprocess.Popen(["openssl", "rsa", "-noout", "-modulus", "-in", str(key)], stdout=subprocess.PIPE)
+               md5_key = subprocess.check_output(["openssl", "md5"], stdin=ps.stdout)
+               if md5_key == md5_cert:
+                  system_key = key
+           print(system_cert, system_key)
+        except:
+               print("No valid certificate found, please use ssl_enable = false")
+               sys.exit(1)
+    if use_ssl: 
+       find_cert()
+       app.run(debug=True, host='0.0.0.0', port=5588, ssl_context=(system_cert, system_key))
+    else:
+       app.run(debug=True, host='0.0.0.0', port=5588)
