@@ -19,7 +19,7 @@ mqtt_user=(mqtt_cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(mqtt_cfg["mqtt_config"]["mqtt_pass"])
 mqtt_interval=(mqtt_cfg["mqtt_config"]["mqtt_interval"])
 chronothermostats=load_api_config_arg("chronothermostats")
-LOGFILE = 'log/mqtt_log'
+LOGFILE = 'mqtt_log'
 LOGFORMAT = '%(asctime)-15s %(message)s'
 DEBUG=False
 
