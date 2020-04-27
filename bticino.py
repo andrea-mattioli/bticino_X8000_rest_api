@@ -138,10 +138,8 @@ def dirtree():
     with open(config_file, 'r') as f:
        api_f_conf=f.read()
     return render_template('file_conf.html', smarter_f_conf=smarter_f_conf, mqtt_f_conf=mqtt_f_conf, api_f_conf=api_f_conf, mimetype='text/plain')
-#    return Response(document, mimetype='text/plain')
 
 def rest():
-    #code, access_token, my_plants, chronothermostats, refresh_token = load_api_config()
     access_token=load_api_config_arg("access_token")
     chronothermostats=load_api_config_arg("chronothermostats")
     chronothermostats_status=[]
@@ -152,8 +150,8 @@ def rest():
         c2c=(i)['chronothermostat']['c2c']                                              
         mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']                  
         mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']                        
-        mode,function,state,setpoint,temperature,temp_unit,humidity = get_status(access_token,plantid,topologyid)
-        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
+        mode,function,state,setpoint,temperature,temp_unit,humidity,my_program = get_status(access_token,plantid,topologyid)
+        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : my_program, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
     return chronothermostats_status
 
 @app.route('/')
@@ -177,7 +175,6 @@ def get_access_token(code):
 def f_refresh_token():
        if not check_empty_item("refresh_token"):
           refresh_token=load_api_config_arg("refresh_token")
-          #code, access_token, my_plants, chronothermostats, refresh_token = load_api_config()
           body = {
                   "client_id": client_id,
                   "grant_type": "refresh_token",
@@ -249,12 +246,15 @@ def get_status(access_token,plantid,topologyid):
             setpoint=(chronothermostat['setPoint']['value'])
             temp_unit=(chronothermostat['temperatureFormat'])
             thermometers=(chronothermostat['thermometer']['measures'])
+            programs=(chronothermostat['programs'])
+            for program in programs:
+                my_program=program['number']
             for thermometer in thermometers:
                 temperature=thermometer['value']
             hygrometers=(chronothermostat['hygrometer']['measures'])
             for hygrometer in hygrometers:
                 humidity=hygrometer['value']
-        return mode,function,state,setpoint,temperature,temp_unit,humidity
+        return mode,function,state,setpoint,temperature,temp_unit,humidity,my_program
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
@@ -297,6 +297,125 @@ def f_c2c_subscribe(access_token,plantid):
         except Exception as e:
             print("[Errno {0}] {1}".format(e.errno, e.strerror))
             return True
+
+def set_payload(arg,function,mode,setPoint,temp_unit,program):
+    if arg == "auto":
+       payload = {
+        "function": function,
+        "mode": "automatic",
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        },
+        "programs": [
+          {
+            "number": program
+          }
+        ]
+       }
+    elif arg == "MANUAL":
+       payload = {
+        "function": function,
+        "mode": "manual",
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        }
+       }
+    elif arg == "BOOST":
+       payload = {
+        "function": function,
+        "mode": "boost",
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        }
+       }
+    elif arg == "off":
+       payload = {
+        "function": function,
+        "mode": "off",
+       }
+    elif arg == "PROTECTION":
+       payload = {
+        "function": function,
+        "mode": "protection",
+       }
+    elif arg == "heat":
+       payload = {
+        "function": "heating",
+        "mode": mode,
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        },
+        "programs": [
+          {
+            "number": program
+          }
+        ]
+       }
+    elif arg == "cool":
+       payload = {
+        "function": "cooling",
+        "mode": mode,
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        },
+        "programs": [
+          {
+            "number": program
+          }
+        ]
+       }
+    elif arg.replace('.', '', 1).isdigit():
+       payload = {
+        "function": function,
+        "mode": "manual",
+        "setPoint": {
+          "value": arg,
+          "unit": temp_unit
+        },
+        "programs": [
+          {
+            "number": program
+          }
+        ]
+       }
+    return payload
+
+def send_thermostat_cmd(mqtt_cmd_topic, arg):
+    access_token=load_api_config_arg("access_token")
+    chronothermostats=load_api_config_arg("chronothermostats")
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key ,
+        'Authorization': 'Bearer '+access_token,
+        'Content-Type': 'application/json',
+    }
+    try:
+       get_actual_state=rest()
+       for i in get_actual_state:
+           my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
+           for j in chronothermostats:
+               my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
+               if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
+                  plantid=(j)['chronothermostat']['plant']
+                  topologyid=(j)['chronothermostat']['topology']
+                  mode=(i)['mode']
+                  function=(i)['function']
+                  setPoint=(i)['setpoint']
+                  temp_unit=(i)['temp_unit']
+                  program=str((i)['program'])
+       payload = set_payload(arg,function,mode,setPoint,temp_unit,program)
+       response = requests.request("POST", devapi_url+"/chronothermostat/thermoregulation/addressLocation/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = json.dumps(payload), headers = headers)
+       if response.status_code == 200:
+          return True
+       else:
+          return False
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+        return False
     
 def schedule_update_token():
     f_refresh_token()
