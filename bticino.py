@@ -543,11 +543,12 @@ if __name__ == '__main__':
                if md5_key == md5_cert:
                   system_key = key
            print(system_cert, system_key)
+           return(system_cert, system_key)
         except:
                print("No valid certificate found, please use ssl_enable = false")
                sys.exit(1)
     if use_ssl: 
-       find_cert()
+       system_cert,system_key=find_cert()
        app.run(debug=True, host='0.0.0.0', port=5588, ssl_context=(system_cert, system_key))
     else:
        app.run(debug=True, host='0.0.0.0', port=5588)
