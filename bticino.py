@@ -29,7 +29,7 @@ config_file = 'config/config.yml'
 mqtt_config_file = 'config/mqtt_config.yml'
 api_config_file = ''
 tmp_api_config_file = 'config/smarter.json'
-static_api_config_file = 'config/.bticino_smarter/smarter.json'
+static_api_config_file = '/config/.bticino_smarter/smarter.json'
 subscribe_c2c=True
 flag_connected = 0
 
@@ -40,7 +40,7 @@ def check_config_file():
        api_config_file = 'config/smarter.json'
        return True
     else:
-       api_config_file = 'config/.bticino_smarter/smarter.json'
+       api_config_file = '/config/.bticino_smarter/smarter.json'
        return False
 
 check_config_file()
