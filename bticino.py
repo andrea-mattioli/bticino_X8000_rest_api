@@ -30,7 +30,7 @@ mqtt_config_file = 'config/mqtt_config.yml'
 api_config_file = ''
 tmp_api_config_file = 'config/smarter.json'
 static_api_config_file = 'config/.bticino_smarter/smarter.json'
-subscribe_c2c=False
+subscribe_c2c=True
 flag_connected = 0
 
 def check_config_file():
@@ -53,8 +53,6 @@ subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 api_user=(cfg["api_config"]["api_user"])
 api_pass=(cfg["api_config"]["api_pass"])
-subscribe_c2c=(cfg["api_config"]["subscribe_c2c"])
-#dns = re.sub(r'(.*://)?([^:?]+).*', '\g<2>', redirect_url)
 redirect_url="https://"+domain+":10100/callback"
 
 with open(mqtt_config_file, 'r') as nf:
@@ -63,7 +61,6 @@ mqtt_broker=(mqtt_cfg["mqtt_config"]["mqtt_broker"])
 mqtt_port=(mqtt_cfg["mqtt_config"]["mqtt_port"])
 mqtt_user=(mqtt_cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(mqtt_cfg["mqtt_config"]["mqtt_pass"])
-mqtt_interval=(mqtt_cfg["mqtt_config"]["mqtt_interval"])
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -453,14 +450,6 @@ def mqtt_get_value():
         mqtt_status_topic=(i['mqtt_status_topic'])
     b_mqtt(mqtt_status_topic,data)
     
-def mqtt_scheduler():
-    mqtt_get_value()
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(mqtt_get_value, 'interval', minutes=mqtt_interval)
-    scheduler.start()
-if not subscribe_c2c:
-   mqtt_scheduler()
-
 def parse_response(data):
     chronothermostats_stored=load_api_config_arg("chronothermostats")
     for j in json.loads(data):
