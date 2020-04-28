@@ -35,7 +35,7 @@ flag_connected = 0
 
 def check_config_file():
     global api_config_file
-    Path("config/.bticino_smarter/").mkdir(parents=True, exist_ok=True)
+    Path("/config/.bticino_smarter/").mkdir(parents=True, exist_ok=True)
     if not os.path.exists(static_api_config_file) or os.path.getsize(static_api_config_file) == 0:
        api_config_file = 'config/smarter.json'
        return True
@@ -505,7 +505,6 @@ def callback():
            update_api_config_file_my_plants(my_plants)
            update_api_config_file_chronothermostats(chronothermostats)
            if check_config_file():
-              print("move conf static")
               shutil.move(os.path.join(tmp_api_config_file), os.path.join(static_api_config_file))
            check_config_file()
            my_value_tamplate=rest()
