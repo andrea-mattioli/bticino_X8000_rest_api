@@ -1,12 +1,7 @@
-import os
-import sys
-import subprocess
-import logging
-import paho.mqtt.client as paho   # pip install paho-mqtt
-import time
-import socket
+import paho.mqtt.client as mqtt
 import string
 import yaml
+import json
 from bticino import send_thermostat_cmd, load_api_config_arg
 
 qos=2
@@ -18,108 +13,72 @@ mqtt_port=(mqtt_cfg["mqtt_config"]["mqtt_port"])
 mqtt_user=(mqtt_cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(mqtt_cfg["mqtt_config"]["mqtt_pass"])
 chronothermostats=load_api_config_arg("chronothermostats")
-LOGFILE = 'mqtt_log'
-LOGFORMAT = '%(asctime)-15s %(message)s'
-DEBUG=False
+clientid = "bticino_mqtt"
+topiclist=[]
 
-if DEBUG:
-    logging.basicConfig(filename=LOGFILE, level=logging.DEBUG, format=LOGFORMAT)
-else:
-    logging.basicConfig(filename=LOGFILE, level=logging.INFO, format=LOGFORMAT)
+for i in chronothermostats:
+    mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']
+    topiclist.append(mqtt_cmd_topic)
 
-logging.info("Starting")
-logging.debug("DEBUG MODE")
+def on_connect(client, userdata, flags, rc):  
+    print("Connected with result code {0}".format(str(rc)))
+    for i in topiclist:
+       client.subscribe(i)  
 
-def set_payload(arg):
-    if arg == "auto":
+def on_message(client, userdata, msg):
+    payload_string=msg.payload.decode('utf-8')
+    topic=msg.topic
+    my_topic = topic.replace("cmd", "status")
+    if payload_string == "AUTOMATIC":
        payload = {
         "mode": "AUTOMATIC"
         }
-    elif arg == "MANUAL":
+    elif payload_string == "MANUAL":
        payload = {
         "mode": "MANUAL"
         }
-    elif arg == "BOOST":
+    elif "BOOST" in str(msg.payload):
        payload = {
         "mode": "BOOST"
         }
-    elif arg == "off":
+    elif payload_string == "OFF":
        payload = {
         "mode": "OFF"
        }
-    elif arg == "PROTECTION":
+    elif payload_string == "PROTECTION":
        payload = {
         "mode": "PROTECTION"
        }
-    elif arg.replace('.', '', 1).isdigit():
+    elif payload_string == "HEATING":
+       payload = {
+        "mode": "HEATING"
+       }
+    elif payload_string == "COOLING":
+       payload = {
+        "mode": "COOLING"
+       }
+    elif payload_string.replace('.', '', 1).isdigit():
        payload = {
         "mode": "MANUAL",
-        "setpoint": arg
+        "setpoint": payload_string
        }
-    return payload
+    elif "m" or "h" or "d" in payload_string:
+       if "m" in payload_string:
+         value=(payload_string.split(" ",1)[0])
+       elif "h" in payload_string:
+         value=(payload_string.split(" ",1)[0])
+       elif "d" in payload_string:
+         value=(payload_string.split(" ",1)[0])
+       payload = {
+        "mode": "MANUAL",
+        "setpoint": value
+       }
+    if send_thermostat_cmd(topic,payload_string):
+       client.publish(my_topic, json.dumps(payload), qos=qos, retain=False)
 
-def runprog(topic, param=None):
-
-    #send_thermostat_cmd(topic,param)
-    if send_thermostat_cmd(topic,param):
-       payload = set_payload(arg)
-       my_topic = topic.replace("cmd", "status")
-       logging.debug("my payload:"+payload, "my_topic:"+ my_topic)
-       mqttc.publish(my_topic, payload, qos=qos, retain=False)
-
-def on_message(mosq, userdata, msg):
-    logging.debug(msg.topic+" "+str(msg.qos)+" "+msg.payload.decode('utf-8'))
-
-    runprog(msg.topic, msg.payload.decode('utf-8'))
-
-def on_connect(mosq, userdata, flags, result_code):
-    logging.debug("Connected to MQTT broker, subscribing to topics...")
-    for topic in topiclist:
-        mqttc.subscribe(topic, qos)
-
-
-def on_disconnect(mosq, userdata, rc):
-    logging.debug("mqtt disconnects")
-    time.sleep(10)
-
-if __name__ == '__main__':
-
-    userdata = {
-    }
-
-    topiclist=[]
-    for i in chronothermostats:
-        mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']
-        topiclist.append(mqtt_cmd_topic)
-
-    if topiclist is None:
-        logging.info("No topic list. Aborting")
-        sys.exit(2)
-
-    clientid = "bticino_mqtt" 
-    mqttc = paho.Client(clientid, clean_session=False)
-
-
-    mqttc.on_message = on_message
-    mqttc.on_connect = on_connect
-    mqttc.on_disconnect = on_disconnect
-
-    mqttc.will_set('clients/mqtt-launcher', payload="Adios!", qos=0, retain=False)
-
-    # Delays will be: 3, 6, 12, 24, 30, 30, ...
-    #mqttc.reconnect_delay_set(delay=3, delay_max=30, exponential_backoff=True)
-
-    mqttc.username_pw_set(mqtt_user,mqtt_pass)
-
-#    if cf.get('mqtt_tls') is not None:
-#        mqttc.tls_set()
-
-    mqttc.connect(mqtt_broker, mqtt_port, 60)
-
-    while True:
-        try:
-            mqttc.loop_forever()
-        except socket.error:
-            time.sleep(5)
-        except KeyboardInterrupt:
-            sys.exit(0)
+client = mqtt.Client("Bticino_X8000")  
+client.on_connect = on_connect
+client.on_message = on_message
+client.username_pw_set(mqtt_user,mqtt_pass)
+client.connect(mqtt_broker, mqtt_port, 60)
+client.loop_forever() 

@@ -6,6 +6,7 @@ import json
 import requests
 import yaml
 import time
+import datetime
 import threading
 import os
 import re
@@ -132,7 +133,7 @@ def verify_password(username, password):
     if username in users:
         return check_password_hash(users.get(username), password)
     return False
-@app.route('/rest', methods=['GET', 'POST'])
+@app.route('/rest')
 @auth.login_required
 def rest_api():
     response=rest()
@@ -316,7 +317,11 @@ def f_c2c_subscribe(access_token,plantid):
             return True
 
 def set_payload(arg,function,mode,setPoint,temp_unit,program):
-    if arg == "auto":
+    date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    boost_30=(datetime.datetime.now() + datetime.timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    boost_60=(datetime.datetime.now() + datetime.timedelta(minutes=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    boost_90=(datetime.datetime.now() + datetime.timedelta(minutes=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if arg == "AUTOMATIC":
        payload = {
         "function": function,
         "mode": "automatic",
@@ -339,16 +344,37 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
           "unit": temp_unit
         }
        }
-    elif arg == "BOOST":
+    elif arg == "BOOST-30":
        payload = {
         "function": function,
         "mode": "boost",
+        "activationTime":date+"/"+boost_30,
         "setPoint": {
           "value": setPoint,
           "unit": temp_unit
         }
        }
-    elif arg == "off":
+    elif arg == "BOOST-60":
+       payload = {
+        "function": function,
+        "mode": "boost",
+        "activationTime":date+"/"+boost_60,
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        }
+       }
+    elif arg == "BOOST-90":
+       payload = {
+        "function": function,
+        "mode": "boost",
+        "activationTime":date+"/"+boost_90,
+        "setPoint": {
+          "value": setPoint,
+          "unit": temp_unit
+        }
+       }
+    elif arg == "OFF":
        payload = {
         "function": function,
         "mode": "off",
@@ -358,7 +384,7 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
         "function": function,
         "mode": "protection",
        }
-    elif arg == "heat":
+    elif arg == "HEATING":
        payload = {
         "function": "heating",
         "mode": mode,
@@ -372,7 +398,7 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
           }
         ]
        }
-    elif arg == "cool":
+    elif arg == "COOLING":
        payload = {
         "function": "cooling",
         "mode": mode,
@@ -393,12 +419,29 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
         "setPoint": {
           "value": arg,
           "unit": temp_unit
-        },
-        "programs": [
-          {
-            "number": program
-          }
-        ]
+        }
+       }
+    elif "m" or "h" or "d" in arg:
+       if "m" in arg:
+         number=(arg.split(" ",1)[1].split("m",1)[0])
+         value=(arg.split(" ",1)[0])
+         to_date=(datetime.datetime.now() + datetime.timedelta(minutes=int(number))).strftime("%Y-%m-%dT%H:%M:%SZ")
+       elif "h" in arg:
+         number=(arg.split(" ",1)[1].split("h",1)[0])
+         value=(arg.split(" ",1)[0])
+         to_date=(datetime.datetime.now() + datetime.timedelta(hours=int(number))).strftime("%Y-%m-%dT%H:%M:%SZ")
+       elif "d" in arg:
+         number=(arg.split(" ",1)[1].split("d",1)[0])
+         value=(arg.split(" ",1)[0])
+         to_date=(datetime.datetime.now() + datetime.timedelta(days=int(number))).strftime("%Y-%m-%dT%H:%M:%SZ")
+       payload = {
+        "function": function,
+        "mode": "manual",
+        "activationTime":date+"/"+to_date,
+        "setPoint": {
+          "value": value,
+          "unit": temp_unit
+        }
        }
     return payload
 
