@@ -71,7 +71,6 @@ def on_message(client, userdata, msg):
          value=(payload_string.split(" ",1)[0])
        if value == "OFF":
           payload = {
-           "function": function,
            "mode": "OFF",
           }
        else:
