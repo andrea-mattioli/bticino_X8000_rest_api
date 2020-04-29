@@ -54,7 +54,7 @@ subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 api_user=(cfg["api_config"]["api_user"])
 api_pass=(cfg["api_config"]["api_pass"])
-redirect_url="https://"+domain+":10100/callback"
+redirect_url="https://"+domain+"/callback"
 
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
