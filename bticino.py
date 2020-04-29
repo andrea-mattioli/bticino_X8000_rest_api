@@ -54,6 +54,8 @@ subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 api_user=(cfg["api_config"]["api_user"])
 api_pass=(cfg["api_config"]["api_pass"])
+ssl_enable=(cfg["api_config"]["use_ssl"])
+subscribe_c2c=(cfg["api_config"]["c2c_enable"])
 redirect_url="https://"+domain+"/callback"
 
 with open(mqtt_config_file, 'r') as nf:
@@ -144,6 +146,8 @@ def rest_api():
 @auth.login_required
 def info():
     my_value_tamplate=rest()
+    if subscribe_c2c:
+       parse_response(json.dumps(response))
     return render_template('info.html', j_response=my_value_tamplate)
 
 @app.route('/file_conf')
@@ -556,4 +560,7 @@ def callback():
            return "something went wrong"
 
 if __name__ == '__main__':
-     app.run(debug=False, host='127.0.0.1', port=5555)
+   if ssl_enable:
+      app.run(debug=False, host='127.0.0.1', port=5555)
+   else:
+      app.run(debug=False, host='0.0.0.0', port=5588)
