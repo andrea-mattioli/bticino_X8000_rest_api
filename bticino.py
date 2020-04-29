@@ -147,7 +147,7 @@ def rest_api():
 def info():
     my_value_tamplate=rest()
     if subscribe_c2c:
-       parse_response(json.dumps(response))
+       parse_response(json.dumps(my_value_tamplate))
     return render_template('info.html', j_response=my_value_tamplate)
 
 @app.route('/file_conf')
