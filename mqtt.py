@@ -69,10 +69,17 @@ def on_message(client, userdata, msg):
          value=(payload_string.split(" ",1)[0])
        elif "d" in payload_string:
          value=(payload_string.split(" ",1)[0])
-       payload = {
-        "mode": "MANUAL",
-        "setpoint": value
-       }
+       if value == "OFF":
+          payload = {
+           "function": function,
+           "mode": "OFF",
+          }
+       else:
+          payload = {
+           "mode": "MANUAL",
+           "setpoint": value
+          }
+    print(payload)
     if send_thermostat_cmd(topic,payload_string):
        client.publish(my_topic, json.dumps(payload), qos=qos, retain=False)
 

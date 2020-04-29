@@ -438,15 +438,22 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
          number=(arg.split(" ",1)[1].split("d",1)[0])
          value=(arg.split(" ",1)[0])
          to_date=(datetime.datetime.now() + datetime.timedelta(days=int(number))).strftime("%Y-%m-%dT%H:%M:%SZ")
-       payload = {
-        "function": function,
-        "mode": "manual",
-        "activationTime":date+"/"+to_date,
-        "setPoint": {
-          "value": value,
-          "unit": temp_unit
-        }
-       }
+       if value == "OFF":
+          payload = {
+           "function": function,
+           "mode": "off",
+           "activationTime":date+"/"+to_date,
+          }
+       else:
+           payload = {
+            "function": function,
+            "mode": "manual",
+            "activationTime":date+"/"+to_date,
+            "setPoint": {
+              "value": value,
+              "unit": temp_unit
+            }
+           }
     return payload
 
 def send_thermostat_cmd(mqtt_cmd_topic, arg):
