@@ -85,6 +85,6 @@ def on_message(client, userdata, msg):
 client = mqtt.Client("Bticino_X8000")  
 client.on_connect = on_connect
 client.on_message = on_message
-client.username_pw_set(mqtt_user,mqtt_pass)
+client.username_pw_set(str(mqtt_user),str(mqtt_pass))
 client.connect(mqtt_broker, mqtt_port, 60)
 client.loop_forever() 
