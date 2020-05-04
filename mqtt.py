@@ -29,57 +29,8 @@ def on_message(client, userdata, msg):
     payload_string=msg.payload.decode('utf-8')
     topic=msg.topic
     my_topic = topic.replace("cmd", "status")
-    if payload_string == "AUTOMATIC":
-       payload = {
-        "mode": "AUTOMATIC"
-        }
-    elif payload_string == "MANUAL":
-       payload = {
-        "mode": "MANUAL"
-        }
-    elif "BOOST" in str(msg.payload):
-       payload = {
-        "mode": "BOOST"
-        }
-    elif payload_string == "OFF":
-       payload = {
-        "mode": "OFF"
-       }
-    elif payload_string == "PROTECTION":
-       payload = {
-        "mode": "PROTECTION"
-       }
-    elif payload_string == "HEATING":
-       payload = {
-        "mode": "HEATING"
-       }
-    elif payload_string == "COOLING":
-       payload = {
-        "mode": "COOLING"
-       }
-    elif payload_string.replace('.', '', 1).isdigit():
-       payload = {
-        "mode": "MANUAL",
-        "setpoint": payload_string
-       }
-    elif "m" or "h" or "d" in payload_string:
-       if "m" in payload_string:
-         value=(payload_string.split(" ",1)[0])
-       elif "h" in payload_string:
-         value=(payload_string.split(" ",1)[0])
-       elif "d" in payload_string:
-         value=(payload_string.split(" ",1)[0])
-       if value == "OFF":
-          payload = {
-           "mode": "OFF",
-          }
-       else:
-          payload = {
-           "mode": "MANUAL",
-           "setpoint": value
-          }
-    print(payload)
-    if send_thermostat_cmd(topic,payload_string):
+    payload=send_thermostat_cmd(topic,payload_string)
+    if payload != "":
        client.publish(my_topic, json.dumps(payload), qos=qos, retain=False)
 
 client = mqtt.Client("Bticino_X8000")  

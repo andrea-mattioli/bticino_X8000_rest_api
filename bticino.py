@@ -473,6 +473,7 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
                if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
                   plantid=(j)['chronothermostat']['plant']
                   topologyid=(j)['chronothermostat']['topology']
+                  name=(j)['chronothermostat']['name']
                   mode=(i)['mode']
                   function=(i)['function']
                   setPoint=(i)['setpoint']
@@ -481,7 +482,25 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
        payload = set_payload(arg,function,mode,setPoint,temp_unit,program)
        response = requests.request("POST", devapi_url+"/chronothermostat/thermoregulation/addressLocation/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = json.dumps(payload), headers = headers)
        if response.status_code == 200:
-          return True
+          get_actual_state=rest()
+          for i in get_actual_state:
+              my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
+              for j in chronothermostats:
+                  my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
+                  if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
+                     plantid=(j)['chronothermostat']['plant']
+                     topologyid=(j)['chronothermostat']['topology']
+                     name=(j)['chronothermostat']['name']
+                     mode=(i)['mode']
+                     state=(i)['state']
+                     temperature=(i)['temperature'] 
+                     humidity=(i)['humidity'] 
+                     function=(i)['function']
+                     setPoint=(i)['setpoint']
+                     temp_unit=(i)['temp_unit']
+                     program=str((i)['program'])
+          response_payload= { "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setPoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : program }
+          return response_payload 
        else:
           return False
     except Exception as e:
