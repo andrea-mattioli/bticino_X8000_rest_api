@@ -12,6 +12,8 @@ import os
 import re
 import sys
 import shutil
+import jinja2
+from jinja2 import Template
 from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask_httpauth import HTTPBasicAuth
@@ -31,8 +33,12 @@ mqtt_config_file = 'config/mqtt_config.yml'
 api_config_file = ''
 tmp_api_config_file = 'config/smarter.json'
 static_api_config_file = '/config/.bticino_smarter/smarter.json'
+package_template = 'templates/package.yml.jinja2'
+package_config_file = '/config/packages/bticino_x8000.yaml'
 subscribe_c2c=True
 flag_connected = 0
+open_list = ["[","{","("] 
+close_list = ["]","}",")"]
 
 def check_config_file():
     global api_config_file
@@ -79,12 +85,51 @@ def check_empty_item(item):
        return True
     else:
        return False
-#write json file
+ 
+def check(myStr): 
+    stack = [] 
+    for i in myStr: 
+        if i in open_list: 
+            stack.append(i) 
+        elif i in close_list: 
+            pos = close_list.index(i) 
+            if ((len(stack) > 0) and
+                (open_list[pos] == stack[len(stack)-1])): 
+                stack.pop() 
+            else:
+                return False
+    if len(stack) == 0:
+        return True
+    else:
+        return False
+
+def repair_json():
+    a_file = open(api_config_file, "r")
+    f=a_file.read()
+    while not check(f):
+       f = f[:-1]
+    a_file.close()
+    a_file = open(api_config_file, "w")
+    a_file.write(f)
+    a_file.close()
+    a_file = open(api_config_file, "r")
+    try:
+      json_object = json.load(a_file)
+      a_file.close()
+      return json_object
+    except:
+      pass
+
 def get_json():
     a_file = open(api_config_file, "r")
-    json_object = json.load(a_file)
-    a_file.close()
-    return json_object
+    try:
+      json_object = json.load(a_file)
+      a_file.close()
+      return json_object
+    except:
+      json_object=repair_json()
+      return json_object
+
 def write_json(json_object):
     a_file = open(api_config_file, "w")
     json.dump(json_object, a_file)
@@ -109,7 +154,11 @@ def update_api_config_file_chronothermostats(chronothermostats):
     json_object=get_json()
     json_object['api_requirements']['chronothermostats'] = chronothermostats
     write_json(json_object)
-#end write json file
+def update_api_config_file_my_programs(my_programs_array):
+    json_object=get_json()
+    json_object['api_requirements']['chronothermostats']['programs'] = my_programs_array
+    write_json(json_object)
+
 def load_api_config():
     json_object=get_json()
     code = json_object['api_requirements']['code']
@@ -151,16 +200,39 @@ def info():
        parse_response(json.dumps(my_value_tamplate))
     return render_template('info.html', j_response=my_value_tamplate)
 
+@app.route('/create_entities')
+@auth.login_required
+def create_entities():
+    Path("/config/packages").mkdir(parents=True, exist_ok=True)
+    with open(package_template) as file_:
+        template = Template(file_.read())
+    chronothermostats=load_api_config_arg("chronothermostats")
+    my_programs_array=[]
+    my_chronothermostat_array=[]
+    for i in chronothermostats:                                                                                  
+        name=(i)['chronothermostat']['name']                                                                                      
+        mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']                  
+        mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']
+        programs=(i)['chronothermostat']['programs']
+        for program in programs:
+            my_program_name=program['program_name']
+            if my_program_name != "0":
+               my_programs_array.append(my_program_name)
+        my_chronothermostat_array.append({"name":name.lower(), "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic, "programs":my_programs_array})
+    
+    json_object=json.dumps(my_chronothermostat_array)
+    my_value_template = json.loads(json_object)
+    f = open(package_config_file, "w+")
+    f.write(template.render(j_response=my_value_template))
+    f.close()
+    return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
+
 @app.route('/file_conf')
 @auth.login_required
 def dirtree():
     with open(api_config_file, 'r') as f:
        smarter_f_conf=f.read()
-    with open(mqtt_config_file, 'r') as f:
-       mqtt_f_conf=f.read()
-    with open(config_file, 'r') as f:
-       api_f_conf=f.read()
-    return render_template('file_conf.html', smarter_f_conf=smarter_f_conf, mqtt_f_conf=mqtt_f_conf, api_f_conf=api_f_conf, mimetype='text/plain')
+    return render_template('file_conf.html', smarter_f_conf=smarter_f_conf, mimetype='text/plain')
 
 def rest():
     access_token=load_api_config_arg("access_token")
@@ -173,8 +245,8 @@ def rest():
         c2c=(i)['chronothermostat']['c2c']                                              
         mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']                  
         mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']                        
-        mode,function,state,setpoint,temperature,temp_unit,humidity,my_program = get_status(access_token,plantid,topologyid)
-        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : my_program, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
+        mode,function,state,setpoint,temperature,temp_unit,humidity,my_program_name = get_status(access_token,plantid,topologyid)
+        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : my_program_name, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
     return chronothermostats_status
 
 @app.route('/')
@@ -204,11 +276,14 @@ def f_refresh_token():
                   "refresh_token": refresh_token,
                   "client_secret": client_secret,
               }
-          response = requests.request("POST", token_url, data = body)
-          access_token = json.loads(response.text)['access_token']
-          update_api_config_file_access_token(access_token)
-          refresh_token = json.loads(response.text)['refresh_token']
-          update_api_config_file_refresh_token(refresh_token)
+          try:
+            response = requests.request("POST", token_url, data = body)
+            access_token = json.loads(response.text)['access_token']
+            update_api_config_file_access_token(access_token)
+            refresh_token = json.loads(response.text)['refresh_token']
+            update_api_config_file_refresh_token(refresh_token)
+          except:
+              pass
 
 def get_plants(access_token):
     headers = {
@@ -221,7 +296,9 @@ def get_plants(access_token):
         plants = json.loads(response.text)['plants']
         my_plants=[]
         for plan in plants:
-            my_plants.append(plan['id'])
+            my_plant_id=(plan['id'])
+            my_plant_name=(plan['name'])
+            my_plants.append({"plant":{"id":my_plant_id, "name":my_plant_name}})
         return my_plants
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
@@ -234,7 +311,8 @@ def get_topology(access_token,my_plants):
     payload = ''
     try:
         chronothermostats=[]
-        for plant in my_plants:
+        for plant_id in my_plants:
+            plant=(plant_id)['plant']['id']
             response = requests.request("GET", devapi_url+"/plants/"+plant+"/topology", data = payload, headers = headers)
             topologys = json.loads(response.text)['plant']['modules']
             plant_r = json.loads(response.text)['plant']['id']
@@ -248,10 +326,54 @@ def get_topology(access_token,my_plants):
                    topologyname=(topology['name'])
                    mqtt_status_topic="/bticino/"+topologyid+"/status"
                    mqtt_cmd_topic="/bticino/"+topologyid+"/cmd"
-                   chronothermostats.append({"chronothermostat":{"plant":plant, "topology":topologyid, "name":topologyname, "c2c":c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic}})
+                   Null,programs=get_programs_name(access_token, plant, topologyid)
+                   chronothermostats.append({"chronothermostat":{"plant":plant, "topology":topologyid, "name":topologyname, "c2c":c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic, "programs":programs}})
         return chronothermostats
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
+def get_programs_name(access_token,plantid,topologyid):
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key ,
+        'Authorization': 'Bearer '+access_token,
+    }
+    payload = ''
+    try:
+        my_programs_array=[]
+        response = requests.request("GET", thermo_url+"/plants/"+plantid+"/modules/parameter/id/value/"+topologyid+"/programlist", data = payload, headers = headers)
+        chronothermostats = json.loads(response.text)['chronothermostats']
+        for chronothermostat in chronothermostats:
+            programs=(chronothermostat['programs'])
+            for program in programs:
+                my_program_number=program['number']
+                my_program_name=program['name']
+                my_programs_array.append({"program_number":my_program_number, "program_name":my_program_name}) 
+        return my_program_name,my_programs_array
+    except:
+        pass
+def get_programs_name_from_local(topologyid,program_number):
+    chronothermostats_stored=load_api_config_arg("chronothermostats")
+    for c in chronothermostats_stored:
+        topology = c['chronothermostat']['topology']
+        my_programs = c['chronothermostat']['programs']
+        if topology == topologyid:
+           for prg in my_programs:
+               my_program_number=prg['program_number']
+               if int(my_program_number) == int(program_number):
+                   my_program_name=prg['program_name']
+                   return my_program_name   
+
+def get_programs_number_from_local(topologyid,program_name):
+    chronothermostats_stored=load_api_config_arg("chronothermostats")
+    for c in chronothermostats_stored:
+        topology = c['chronothermostat']['topology']
+        my_programs = c['chronothermostat']['programs']
+        if topology == topologyid:
+           for prg in my_programs:
+               my_program_name=prg['program_name']
+               if my_program_name == program_name:
+                   my_program_number=prg['program_number']
+                   return my_program_number
 
 def get_status(access_token,plantid,topologyid):
     headers = {
@@ -270,14 +392,15 @@ def get_status(access_token,plantid,topologyid):
             temp_unit=(chronothermostat['temperatureFormat'])
             thermometers=(chronothermostat['thermometer']['measures'])
             programs=(chronothermostat['programs'])
-            for program in programs:
-                my_program=program['number']
+            for prog in programs:
+                program_number = prog['number']
+                program_name = get_programs_name_from_local(topologyid, program_number)
             for thermometer in thermometers:
                 temperature=thermometer['value']
             hygrometers=(chronothermostat['hygrometer']['measures'])
             for hygrometer in hygrometers:
                 humidity=hygrometer['value']
-        return mode,function,state,setpoint,temperature,temp_unit,humidity,my_program
+        return mode,function,state,setpoint,temperature,temp_unit,humidity,program_name
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
@@ -307,8 +430,6 @@ def f_c2c_subscribe(access_token,plantid):
         payload = ''
         try:
            response = requests.request("GET", devapi_url+"/subscription", data = payload, headers = headers)
-           list_endpoints=[]
-           list_subscription=[]
            for j in json.loads(response.text):
                if redirect_url == j['EndPointUrl']:
                   subscriptionId=(j['subscriptionId'])
@@ -384,39 +505,69 @@ def set_payload(arg,function,mode,setPoint,temp_unit,program):
         "function": function,
         "mode": "off",
        }
-    elif arg == "PROTECTION":
+    elif arg == "PROTECTION" or arg == "off":
        payload = {
         "function": function,
         "mode": "protection",
        }
-    elif arg == "HEATING":
-       payload = {
-        "function": "heating",
-        "mode": mode,
-        "setPoint": {
-          "value": setPoint,
-          "unit": temp_unit
-        },
-        "programs": [
-          {
-            "number": program
+    elif arg == "HEATING" or arg == "heat":
+       if mode == "PROTECTION" or mode == "OFF":
+          payload = {
+           "function": "heating",
+           "mode": "automatic",
+           "setPoint": {
+             "value": setPoint,
+             "unit": temp_unit
+           },
+           "programs": [
+             {
+               "number": program
+             }
+           ]
           }
-        ]
-       }
-    elif arg == "COOLING":
-       payload = {
-        "function": "cooling",
-        "mode": mode,
-        "setPoint": {
-          "value": setPoint,
-          "unit": temp_unit
-        },
-        "programs": [
-          {
-            "number": program
+       else:
+          payload = {
+           "function": "heating",
+           "mode": mode,
+           "setPoint": {
+             "value": setPoint,
+             "unit": temp_unit
+           },
+           "programs": [
+             {
+               "number": program
+             }
+           ]
+          }          
+    elif arg == "COOLING" or arg == "cool":
+       if mode == "PROTECTION" or mode == "OFF":
+          payload = {
+           "function": "cooling",
+           "mode": "automatic",
+           "setPoint": {
+             "value": setPoint,
+             "unit": temp_unit
+           },
+           "programs": [
+             {
+               "number": program
+             }
+           ]
           }
-        ]
-       }
+       else:
+          payload = {
+           "function": "cooling",
+           "mode": mode,
+           "setPoint": {
+             "value": setPoint,
+             "unit": temp_unit
+           },
+           "programs": [
+             {
+               "number": program
+             }
+           ]
+          }
     elif arg.replace('.', '', 1).isdigit():
        payload = {
         "function": function,
@@ -471,6 +622,7 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
            my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
            for j in chronothermostats:
                my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
+               programs_avail=(j)['chronothermostat']['programs']
                if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
                   plantid=(j)['chronothermostat']['plant']
                   topologyid=(j)['chronothermostat']['topology']
@@ -479,7 +631,12 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
                   function=(i)['function']
                   setPoint=(i)['setpoint']
                   temp_unit=(i)['temp_unit']
-                  program=str((i)['program'])
+                  program_name=(i)['program']                   
+                  program=(get_programs_number_from_local(topologyid, program_name))
+       for prg in programs_avail:
+           if arg == (prg)['program_name']:
+              program = (prg)['program_number']
+              arg="AUTOMATIC"
        payload = set_payload(arg,function,mode,setPoint,temp_unit,program)
        response = requests.request("POST", devapi_url+"/chronothermostat/thermoregulation/addressLocation/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = json.dumps(payload), headers = headers)
        if response.status_code == 200:
@@ -516,7 +673,7 @@ def schedule_update_token():
 schedule_update_token()
 
 def b_mqtt(mqtt_status_topic, data):
-    subprocess.call(["mosquitto_pub", "-h", str(mqtt_broker), "-p", str(mqtt_port), "-u", str(mqtt_user), "-P", str(mqtt_pass), "-m", data, "-t", str(mqtt_status_topic), "-i", "C2C_Subscription"])
+    subprocess.call(["mosquitto_pub", "-h", str(mqtt_broker), "-p", str(mqtt_port), "-u", str(mqtt_user), "-P", str(mqtt_pass), "-m", data, "-t", str(mqtt_status_topic), "-i", "C2C_Subscription", "-r"])
 
 def mqtt_get_value():
     data=rest()
@@ -539,16 +696,28 @@ def parse_response(data):
                       mode=(chronothermostat['mode'])
                       state=(chronothermostat['loadState'])
                       setpoint=(chronothermostat['setPoint']['value'])
+                      remaining_time=None
+                      remaining_time_minutes=None
+                      try:
+                          activationTime=(chronothermostat['activationTime'])
+                          date2=(datetime.datetime.strptime(activationTime, "%Y-%m-%dT%H:%M:%S") - datetime.datetime.now())
+                          remaining_time_minutes = str(date2.total_seconds() / 60).split(".")[0]
+                          remaining_time="h e ".join(str(datetime.datetime.strptime(activationTime, "%Y-%m-%dT%H:%M:%S") - datetime.datetime.now()).split(".")[0].split(":", 2)[:2])+"m"
+                          if "0h e" in remaining_time:
+                             remaining_time=remaining_time.split("0h e ")[1]
+                      except:
+                          pass
                       programs=(chronothermostat['programs'])
                       for prog in programs:
-                          program = prog['number']
+                          program_number = prog['number']
+                          program_name = get_programs_name_from_local(topology, program_number)
                       thermometers=(chronothermostat['thermometer']['measures'])
                       for thermometer in thermometers:
                           temperature = thermometer['value']
                       hygrometers=(chronothermostat['hygrometer']['measures'])
                       for hygrometer in hygrometers:
                           humidity = hygrometer['value']
-                      mqtt_data = json.dumps({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "humidity" : humidity, "program": program})
+                      mqtt_data = json.dumps({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "humidity" : humidity, "program": program_name, "remaining_time": remaining_time, "remaining_time_minutes": remaining_time_minutes})
                       b_mqtt(mqtt_status_topic,mqtt_data)
         except:
            name = (j['name'])
