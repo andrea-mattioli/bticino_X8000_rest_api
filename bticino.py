@@ -384,7 +384,6 @@ def get_status(access_token,plantid,topologyid):
     try:
         response = requests.request("GET", thermo_url+"/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = payload, headers = headers)
         chronothermostats = json.loads(response.text)['chronothermostats']
-        print(chronothermostats)
         for chronothermostat in chronothermostats:
             function=(chronothermostat['function'])
             mode=(chronothermostat['mode'])
