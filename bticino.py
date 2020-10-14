@@ -245,8 +245,8 @@ def rest():
         c2c=(i)['chronothermostat']['c2c']                                              
         mqtt_status_topic=(i)['chronothermostat']['mqtt_status_topic']                  
         mqtt_cmd_topic=(i)['chronothermostat']['mqtt_cmd_topic']                        
-        mode,function,state,setpoint,temperature,temp_unit,humidity,my_program_name = get_status(access_token,plantid,topologyid)
-        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : my_program_name, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic})
+        mode,function,state,setpoint,temperature,temp_unit,humidity,my_program_name,remaining_time,remaining_time_minutes = get_status(access_token,plantid,topologyid)
+        chronothermostats_status.append({ "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setpoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : my_program_name, "c2c-subscription": c2c, "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic, "remaining_time":remaining_time, "remaining_time_minutes":remaining_time_minutes})
     return chronothermostats_status
 
 @app.route('/')
@@ -384,6 +384,7 @@ def get_status(access_token,plantid,topologyid):
     try:
         response = requests.request("GET", thermo_url+"/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = payload, headers = headers)
         chronothermostats = json.loads(response.text)['chronothermostats']
+        print(chronothermostats)
         for chronothermostat in chronothermostats:
             function=(chronothermostat['function'])
             mode=(chronothermostat['mode'])
@@ -391,6 +392,17 @@ def get_status(access_token,plantid,topologyid):
             setpoint=(chronothermostat['setPoint']['value'])
             temp_unit=(chronothermostat['temperatureFormat'])
             thermometers=(chronothermostat['thermometer']['measures'])
+            remaining_time=None
+            remaining_time_minutes=None
+            try:
+                activationTime=(chronothermostat['activationTime'])
+                date2=(datetime.datetime.strptime(activationTime, "%Y-%m-%dT%H:%M:%S") - datetime.datetime.now())
+                remaining_time_minutes = str(date2.total_seconds() / 60).split(".")[0]
+                remaining_time="h e ".join(str(datetime.datetime.strptime(activationTime, "%Y-%m-%dT%H:%M:%S") - datetime.datetime.now()).split(".")[0].split(":", 2)[:2])+"m"
+                if "0h e" in remaining_time:
+                   remaining_time=remaining_time.split("0h e ")[1]
+            except:
+                pass
             programs=(chronothermostat['programs'])
             for prog in programs:
                 program_number = prog['number']
@@ -400,7 +412,7 @@ def get_status(access_token,plantid,topologyid):
             hygrometers=(chronothermostat['hygrometer']['measures'])
             for hygrometer in hygrometers:
                 humidity=hygrometer['value']
-        return mode,function,state,setpoint,temperature,temp_unit,humidity,program_name
+        return mode,function,state,setpoint,temperature,temp_unit,humidity,program_name,remaining_time,remaining_time_minutes
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
 
@@ -645,6 +657,7 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
               my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
               for j in chronothermostats:
                   my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
+                  programs_avail=(j)['chronothermostat']['programs']
                   if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
                      plantid=(j)['chronothermostat']['plant']
                      topologyid=(j)['chronothermostat']['topology']
@@ -656,8 +669,10 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
                      function=(i)['function']
                      setPoint=(i)['setpoint']
                      temp_unit=(i)['temp_unit']
-                     program=str((i)['program'])
-          response_payload= { "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setPoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : program }
+                     program=(i)['program']
+                     remaining_time=(i)['remaining_time']
+                     remaining_time_minutes=(i)['remaining_time_minutes']
+          response_payload= { "name": name, "mode" : mode, "function" : function ,  "state" : state, "setpoint" : setPoint, "temperature" : temperature, "temp_unit" : temp_unit, "humidity" : humidity, "program" : program, "remaining_time":remaining_time, "remaining_time_minutes":remaining_time_minutes }
           return response_payload 
        else:
           return False

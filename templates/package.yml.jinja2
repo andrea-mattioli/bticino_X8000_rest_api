@@ -235,18 +235,20 @@ automation:
          payload: >-
             {% raw -%}    {% if is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_boost_mode', 'Boost 30m') %}{% endraw %}
                BOOST-30
-            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_mode', 'Boost 60m') %}{% endraw %}
+            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_boost_mode', 'Boost 60m') %}{% endraw %}
                BOOST-60
-            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_mode', 'Boost 90m') %}{% endraw %}
+            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_boost_mode', 'Boost 90m') %}{% endraw %}
                BOOST-90
-            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_mode', 'off') %}{% endraw %}
+            {% raw -%}    {% elif is_state('input_select.{% endraw %}{{ chrono['name'] }}{% raw -%}_boost_mode', 'off') %}{% endraw %}
                AUTOMATIC
             {% raw -%}    {% endif %}{% endraw %}
   - id: set_{{ chrono['name'] }}_program_selector
     alias: Set Program Selector
     trigger:
-      platform: mqtt
-      topic: "{{ chrono['mqtt_cmd_topic'] }}"
+      - platform: mqtt
+        topic: "{{ chrono['mqtt_cmd_topic'] }}"
+      - entity_id: sensor.termostato_{{ chrono['name'] }}_program
+        platform: state
     action:
      - delay: 00:00:40
      - service: input_select.select_option
