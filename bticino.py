@@ -218,8 +218,10 @@ def create_entities():
             my_program_name=program['program_name']
             if my_program_name != "0":
                my_programs_array.append(my_program_name)
+        if not my_programs_array:
+            my_programs_array.append(' ')
         my_chronothermostat_array.append({"name":name.lower(), "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic, "programs":my_programs_array})
-    
+        my_programs_array=[]
     json_object=json.dumps(my_chronothermostat_array)
     my_value_template = json.loads(json_object)
     f = open(package_config_file, "w+")
@@ -633,8 +635,8 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
            my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
            for j in chronothermostats:
                my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
-               programs_avail=(j)['chronothermostat']['programs']
                if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
+                  programs_avail=(j)['chronothermostat']['programs']
                   plantid=(j)['chronothermostat']['plant']
                   topologyid=(j)['chronothermostat']['topology']
                   name=(j)['chronothermostat']['name']
@@ -644,10 +646,10 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
                   temp_unit=(i)['temp_unit']
                   program_name=(i)['program']                   
                   program=(get_programs_number_from_local(topologyid, program_name))
-       for prg in programs_avail:
-           if arg == (prg)['program_name']:
-              program = (prg)['program_number']
-              arg="AUTOMATIC"
+                  for prg in programs_avail:
+                      if arg == (prg)['program_name']:
+                         program = (prg)['program_number']
+                         arg="AUTOMATIC"
        payload = set_payload(arg,function,mode,setPoint,temp_unit,program)
        response = requests.request("POST", devapi_url+"/chronothermostat/thermoregulation/addressLocation/plants/"+plantid+"/modules/parameter/id/value/"+topologyid, data = json.dumps(payload), headers = headers)
        if response.status_code == 200:
@@ -656,9 +658,9 @@ def send_thermostat_cmd(mqtt_cmd_topic, arg):
               my_mqtt_cmd_topic=(i)['mqtt_cmd_topic']
               for j in chronothermostats:
                   my_stored_mqtt_cmd_topic=(j)['chronothermostat']['mqtt_cmd_topic']
-                  programs_avail=(j)['chronothermostat']['programs']
                   if mqtt_cmd_topic == my_mqtt_cmd_topic == my_stored_mqtt_cmd_topic:
                      plantid=(j)['chronothermostat']['plant']
+                     programs_avail=(j)['chronothermostat']['programs']
                      topologyid=(j)['chronothermostat']['topology']
                      name=(j)['chronothermostat']['name']
                      mode=(i)['mode']

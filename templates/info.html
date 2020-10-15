@@ -52,7 +52,7 @@
                         <td style="text-align:center">{{ i['c2c-subscription'] }}</td>
         		<td style="text-align:center">{{ i['mqtt_status_topic'] }}</td>
             <td style="text-align:center">{{ i['mqtt_cmd_topic'] }}</td>
-            <td style="text-align:center"><button onclick="hiddendiv('{{ i['name'] }}')";>Try it</button></td>
+            <td style="text-align:center"><button onclick="hiddendiv('{{ i['name'] | lower | replace(" ", "_") }}')";>Try it</button></td>
                     </tr>
         
             {% endfor %}
@@ -62,7 +62,7 @@
       <body>
         <input type="button" id='script' name="scriptbutton" value=" Create HA Entities " onclick="goPython()">
     
-        <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     
         <script>
             function goPython(){
@@ -121,7 +121,7 @@ cards:
         var x = document.getElementById("myDIV");
         var text = $('#my_code').text();
         x.style.display = "none";
-        text = text.replaceAll('##name##', name.toLowerCase());
+        text = text.replaceAll('##name##', name);
         $('#my_code').text(text);
        
         if (x.style.display === "none") {
@@ -135,6 +135,7 @@ cards:
         function cancel() {
           var x = document.getElementById("myDIV");
           x.style.display = "none";
+          location.reload();
         }
         </script>
       <script>
