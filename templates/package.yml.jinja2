@@ -264,5 +264,5 @@ automation:
        service: mqtt.publish
        data:
          topic: "{{ chrono['mqtt_cmd_topic'] }}"
-         {% raw -%}    payload: "{{ states('input_select.sala_program') }}"{% endraw %}
+         {% raw -%}    payload: "{{ states('input_select.{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_program') }}"{% endraw %}
 {% endfor %}
