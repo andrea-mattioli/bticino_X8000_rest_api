@@ -219,7 +219,7 @@ def create_entities():
             if my_program_name != "0":
                my_programs_array.append(my_program_name)
         if not my_programs_array:
-            my_programs_array.append(' ')
+            my_programs_array.append('No Program')
         my_chronothermostat_array.append({"name":name.lower(), "mqtt_status_topic":mqtt_status_topic, "mqtt_cmd_topic":mqtt_cmd_topic, "programs":my_programs_array})
         my_programs_array=[]
     json_object=json.dumps(my_chronothermostat_array)
