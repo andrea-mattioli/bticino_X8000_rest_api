@@ -16,8 +16,6 @@ import jinja2
 from jinja2 import Template
 from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask_httpauth import HTTPBasicAuth
-from werkzeug.security import generate_password_hash, check_password_hash
 import subprocess
 from pathlib import Path
 def randomStringDigits(stringLength=32):
@@ -59,11 +57,10 @@ client_secret_file=str((cfg["api_config"]["client_secret"]))
 client_secret=re.search('<bticino>(.*?)<bticino>', client_secret_file).group(1)
 subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
-api_user=(cfg["api_config"]["api_user"])
-api_pass=(cfg["api_config"]["api_pass"])
-ssl_enable=(cfg["api_config"]["use_ssl"])
+haip=(cfg["api_config"]["haip"])
 subscribe_c2c=(cfg["api_config"]["c2c_enable"])
-redirect_url="https://"+domain+"/callback"
+redirect_url="https://"+domain+"/api/webhook/mattiols_X_8000"
+redirect_code_url="http://"+haip+":5588"+"/callback"
 
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
@@ -73,12 +70,6 @@ mqtt_user=(mqtt_cfg["mqtt_config"]["mqtt_user"])
 mqtt_pass=(mqtt_cfg["mqtt_config"]["mqtt_pass"])
 
 app = Flask(__name__)
-auth = HTTPBasicAuth()
-
-users = {
-    api_user: generate_password_hash(api_pass)
-}
-
 def check_empty_item(item):
     json_object=get_json()
     if len(json_object['api_requirements'][item]) < 1:
@@ -180,20 +171,13 @@ def load_api_config_arg(arg):
     if arg == "chronothermostats":
        arg = json_object['api_requirements']['chronothermostats']
     return arg 
-@auth.verify_password
-def verify_password(username, password):
-    if username in users:
-        return check_password_hash(users.get(username), password)
-    return False
 @app.route('/rest')
-@auth.login_required
 def rest_api():
     response=rest()
     if subscribe_c2c:
        parse_response(json.dumps(response))   
     return Response(json.dumps(response),  mimetype='application/json')
 @app.route('/info')
-@auth.login_required
 def info():
     my_value_tamplate=rest()
     if subscribe_c2c:
@@ -201,7 +185,6 @@ def info():
     return render_template('info.html', j_response=my_value_tamplate)
 
 @app.route('/create_entities')
-@auth.login_required
 def create_entities():
     Path("/config/packages").mkdir(parents=True, exist_ok=True)
     with open(package_template) as file_:
@@ -225,12 +208,11 @@ def create_entities():
     json_object=json.dumps(my_chronothermostat_array)
     my_value_template = json.loads(json_object)
     f = open(package_config_file, "w+")
-    f.write(template.render(j_response=my_value_template))
+    f.write(template.render(j_response=my_value_template, haip=redirect_code_url))
     f.close()
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 
 @app.route('/file_conf')
-@auth.login_required
 def dirtree():
     with open(api_config_file, 'r') as f:
        smarter_f_conf=f.read()
@@ -252,9 +234,9 @@ def rest():
     return chronothermostats_status
 
 @app.route('/')
-@auth.login_required
 def get_token(my_url=None):
-    my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_url
+    my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_code_url
+    #my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+"http://192.168.1.178:5588/callback"
     return render_template('index.html', code_url=my_url)
 
 def get_access_token(code):
@@ -772,7 +754,4 @@ def callback():
            return "something went wrong"
 
 if __name__ == '__main__':
-   if ssl_enable:
-      app.run(debug=False, host='127.0.0.1', port=5555)
-   else:
-      app.run(debug=False, host='0.0.0.0', port=5588)
+    app.run(debug=False, host='0.0.0.0', port=5588)
