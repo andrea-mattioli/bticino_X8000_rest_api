@@ -16,8 +16,8 @@ homeassistant:
 panel_iframe:
   x8000:
     title: 'Bticino X8000'
+    icon: mdi:home-thermometer
     url: '{{ haip | replace ("/callback", "") }}'
-    icon: mdi:home-temperature
   #### SENSOR MQTT ####
 sensor:
 {% for chrono in j_response -%}
