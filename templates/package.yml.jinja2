@@ -16,7 +16,7 @@ homeassistant:
 panel_iframe:
   X_8000:
     title: 'Bticino X8000'
-    url: '{{ haip }} | replace ("/callback", "")'
+    url: '{{ haip | replace ("/callback", "") }}'
   #### SENSOR MQTT ####
 sensor:
 {% for chrono in j_response -%}
@@ -265,19 +265,17 @@ automation:
          topic: "{{ chrono['mqtt_cmd_topic'] }}"
          {% raw -%}    payload: "{{ states('input_select.{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_program') }}"{% endraw %}
 {% endfor %}
+  - id: 'webhook'
+    alias: webhook
+    mode: parallel
+    trigger:
+    - platform: webhook
+      webhook_id: mattiols_X_8000
+    condition: []
+    action:
+    - service: shell_command.send_webhooks
+      data_template:
+        {% raw -%}data: '{{ (trigger.json |tojson) |safe }}'{% endraw %}
 shell_command:
   send_webhooks: >
   {% raw -%}  curl -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
-
-automation:
-- id: 'webhook'
-  alias: webhook
-  mode: parallel
-  trigger:
-  - platform: webhook
-    webhook_id: mattiols_X_8000
-  condition: []
-  action:
-  - service: shell_command.send_webhooks
-    data_template:
-      {% raw -%}data: '{{ (trigger.json |tojson) |safe }}'{% endraw %}
