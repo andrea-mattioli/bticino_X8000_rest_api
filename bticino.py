@@ -33,7 +33,6 @@ tmp_api_config_file = 'config/smarter.json'
 static_api_config_file = '/config/.bticino_smarter/smarter.json'
 package_template = 'templates/package.yml.jinja2'
 package_config_file = '/config/packages/bticino_x8000.yaml'
-subscribe_c2c=True
 flag_connected = 0
 open_list = ["[","{","("] 
 close_list = ["]","}",")"]
@@ -58,7 +57,6 @@ client_secret=re.search('<bticino>(.*?)<bticino>', client_secret_file).group(1)
 subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 haip=(cfg["api_config"]["haip"])
-subscribe_c2c=(cfg["api_config"]["c2c_enable"])
 redirect_url="https://"+domain+"/api/webhook/mattiols_X_8000"
 redirect_code_url="http://"+haip+":5588"+"/callback"
 
@@ -174,14 +172,12 @@ def load_api_config_arg(arg):
 @app.route('/rest')
 def rest_api():
     response=rest()
-    if subscribe_c2c:
-       parse_response(json.dumps(response))   
+    parse_response(json.dumps(response))   
     return Response(json.dumps(response),  mimetype='application/json')
 @app.route('/info')
 def info():
     my_value_tamplate=rest()
-    if subscribe_c2c:
-       parse_response(json.dumps(my_value_tamplate))
+    parse_response(json.dumps(my_value_tamplate))
     return render_template('info.html', j_response=my_value_tamplate)
 
 @app.route('/create_entities')
@@ -212,11 +208,48 @@ def create_entities():
     f.close()
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'} 
 
-@app.route('/file_conf')
-def dirtree():
-    with open(api_config_file, 'r') as f:
-       smarter_f_conf=f.read()
-    return render_template('file_conf.html', smarter_f_conf=smarter_f_conf, mimetype='text/plain')
+@app.route('/c2c_subscription')
+def get_c2c_subscription():
+    access_token=load_api_config_arg("access_token")
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key ,
+        'Authorization': 'Bearer '+access_token,
+        'Content-Type': 'application/json',
+    }
+    payload = ''
+    c2c=[]
+    try:
+        response = requests.request("GET", devapi_url+"/subscription", data = payload, headers = headers)
+        for j in json.loads(response.text):
+           plantId=(j['plantId'])
+           EndPointUrl=(j['EndPointUrl'])
+           subscriptionId=(j['subscriptionId'])
+           c2c.append({ 'plantId':plantId, 'subscriptionId':subscriptionId, 'EndPointUrl':EndPointUrl })
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+        return False
+    return render_template('c2c_subscription.html', c2c_conf=c2c)
+
+@app.route('/c2c_remove')
+def remove_c2c_subscription():
+    plantId = request.args.get('plantId')
+    subscriptionId = request.args.get('subscriptionId')
+    access_token=load_api_config_arg("access_token")
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key ,
+        'Authorization': 'Bearer '+access_token,
+        'Content-Type': 'application/json',
+    }
+    payload = ''
+    try:        
+        response = requests.request("DELETE", devapi_url+"/plants/"+plantId+"/subscription/"+subscriptionId, data = payload, headers = headers)
+        if response.status_code == 200:
+           return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
+        else:
+           return json.dumps({'success':False}), 500, {'ContentType':'application/json'}
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+        return json.dumps({'success':False}), 500, {'ContentType':'application/json'} 
 
 def rest():
     access_token=load_api_config_arg("access_token")
@@ -404,38 +437,22 @@ def f_c2c_subscribe(access_token,plantid):
         'Ocp-Apim-Subscription-Key': subscription_key ,
         'Authorization': 'Bearer '+access_token,
         'Content-Type': 'application/json',
-    }
-    if subscribe_c2c:
-       payload = {
-                  "EndPointUrl": redirect_url,
-                  "description": "Rest Api",
-                 }
-       try:
-          response = requests.request("POST", devapi_url+"/plants/"+plantid+"/subscription", data = json.dumps(payload), headers = headers)
-          if response.status_code == 201:
-             return True
-          if response.status_code == 409:
-             return True
-          else:
-             return False
-       except Exception as e:
-           print("[Errno {0}] {1}".format(e.errno, e.strerror))
-           return False
-    else:
-        payload = ''
-        try:
-           response = requests.request("GET", devapi_url+"/subscription", data = payload, headers = headers)
-           for j in json.loads(response.text):
-               if redirect_url == j['EndPointUrl']:
-                  subscriptionId=(j['subscriptionId'])
-                  response = requests.request("DELETE", devapi_url+"/plants/"+plantid+"/subscription/"+subscriptionId, data = payload, headers = headers)
-                  if response.status_code == 200:
-                     return False
-                  else:
-                     return True
-        except Exception as e:
-            print("[Errno {0}] {1}".format(e.errno, e.strerror))
-            return True
+    }   
+    payload = {
+               "EndPointUrl": redirect_url,
+               "description": "Rest Api",
+              }
+    try:
+       response = requests.request("POST", devapi_url+"/plants/"+plantid+"/subscription", data = json.dumps(payload), headers = headers)
+       if response.status_code == 201:
+          return True
+       if response.status_code == 409:
+          return True
+       else:
+          return False
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+        return False
 
 def set_payload(arg,function,mode,setPoint,temp_unit,program):
     date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
