@@ -57,7 +57,7 @@ client_secret=re.search('<bticino>(.*?)<bticino>', client_secret_file).group(1)
 subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 haip=(cfg["api_config"]["haip"])
-redirect_url="https://"+domain+"/api/webhook/mattiols_X_8000"
+redirect_url="https://"+domain+"/api/webhook/mattiols_x_8000"
 redirect_code_url="http://"+haip+":5588"+"/callback"
 
 with open(mqtt_config_file, 'r') as nf:
