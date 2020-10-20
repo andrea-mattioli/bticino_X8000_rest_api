@@ -57,8 +57,13 @@ client_secret=re.search('<bticino>(.*?)<bticino>', client_secret_file).group(1)
 subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 haip=(cfg["api_config"]["haip"])
+ssl_enable=(cfg["api_config"]["ssl_enable"])
 redirect_url="https://"+domain+"/api/webhook/mattiols_x_8000"
-redirect_code_url="http://"+haip+":5588"+"/callback"
+if ssl_enable:
+    redirect_code_url="https://"+haip+":5588"+"/callback"
+else:
+    redirect_code_url="http://"+haip+":5588"+"/callback"
+
 
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
@@ -439,7 +444,7 @@ def f_c2c_subscribe(access_token,plantid):
         'Content-Type': 'application/json',
     }   
     payload = {
-               "EndPointUrl": redirect_url,
+               "EndPointUrl":   ,
                "description": "Rest Api",
               }
     try:
