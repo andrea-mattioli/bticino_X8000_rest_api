@@ -18,7 +18,6 @@ from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 import subprocess
 from pathlib import Path
-from OpenSSL import SSL
 def randomStringDigits(stringLength=32):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join(random.choice(lettersAndDigits) for i in range(stringLength))
