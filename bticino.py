@@ -64,7 +64,6 @@ if ssl_enable:
 else:
     redirect_code_url="http://"+haip+":5588"+"/callback"
 
-
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
 mqtt_broker=(mqtt_cfg["mqtt_config"]["mqtt_broker"])
