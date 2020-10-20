@@ -278,4 +278,4 @@ automation:
         {% raw -%}data: '{{ (trigger.json |tojson) |safe }}'{% endraw %}
 shell_command:
   send_webhooks: >
-    {% raw -%}curl -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
+    {% raw -%}curl -k -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
