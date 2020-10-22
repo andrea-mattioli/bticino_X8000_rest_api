@@ -200,7 +200,7 @@ input_select:
 automation:
 {% for chrono in j_response %}
   - id: set_{{ chrono['name'] | replace(" ", "_") }}_boost_selector
-    alias: Set Boost Mode Selector
+    alias: Set Boost Mode Selector {{ chrono['name'] | replace(" ", "_") }}
     trigger:
       - platform: mqtt
         topic: "{{ chrono['mqtt_cmd_topic'] }}"
@@ -224,7 +224,7 @@ automation:
             Boost 90m
             {% raw -%}    {% endif %}{% endraw %}
   - id: set_{{ chrono['name'] | replace(" ", "_") }}_boost_mode    
-    alias: Set Boost Mode
+    alias: Set Boost Mode {{ chrono['name'] | replace(" ", "_") }}
     trigger:
       - entity_id: input_select.{{ chrono['name'] | replace(" ", "_") }}_boost_mode
         platform: state
@@ -243,7 +243,7 @@ automation:
                AUTOMATIC
             {% raw -%}    {% endif %}{% endraw %}
   - id: set_{{ chrono['name'] | replace(" ", "_") }}_program_selector
-    alias: Set Program Selector
+    alias: Set Program Selector {{ chrono['name'] | replace(" ", "_") }}
     trigger:
       - platform: mqtt
         topic: "{{ chrono['mqtt_cmd_topic'] }}"
@@ -256,7 +256,7 @@ automation:
         entity_id: input_select.{{ chrono['name'] | replace(" ", "_") }}_program
         {% raw -%}    option: "{{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_program') }}"{% endraw %}
   - id: set_{{ chrono['name'] | replace(" ", "_") }}_program    
-    alias: Set Program
+    alias: Set Program {{ chrono['name'] | replace(" ", "_") }}
     trigger:
       platform: state
       entity_id: input_select.{{ chrono['name'] | replace(" ", "_") }}_program
@@ -278,4 +278,4 @@ automation:
         {% raw -%}data: '{{ (trigger.json |tojson) |safe }}'{% endraw %}
 shell_command:
   send_webhooks: >
-    {% raw -%}curl -k -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
+    {% raw -%}curl -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}

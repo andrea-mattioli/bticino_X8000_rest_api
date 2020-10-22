@@ -57,15 +57,8 @@ client_secret=re.search('<bticino>(.*?)<bticino>', client_secret_file).group(1)
 subscription_key=(cfg["api_config"]["subscription_key"])
 domain=(cfg["api_config"]["domain"])
 haip=(cfg["api_config"]["haip"])
-ssl_enable=(cfg["api_config"]["ssl_enable"])
 redirect_url="https://"+domain+"/api/webhook/mattiols_x_8000"
-if ssl_enable:
-    server_key=(cfg["api_config"]["server_key"])
-    server_cert=(cfg["api_config"]["server_cert"])
-    context = (server_cert, server_key)
-    redirect_code_url="https://"+haip+":5588"+"/callback"
-else:
-    redirect_code_url="http://"+haip+":5588"+"/callback"
+redirect_code_url="http://"+haip+":5588"+"/callback"
 
 with open(mqtt_config_file, 'r') as nf:
     mqtt_cfg = yaml.safe_load(nf)
@@ -446,7 +439,7 @@ def f_c2c_subscribe(access_token,plantid):
         'Content-Type': 'application/json',
     }   
     payload = {
-               "EndPointUrl":  redirect_url,
+               "EndPointUrl": redirect_url,
                "description": "Rest Api",
               }
     try:
@@ -778,7 +771,4 @@ def callback():
            return "something went wrong"
 
 if __name__ == '__main__':
-    if ssl_enable:
-        app.run(debug=False, host='0.0.0.0', port=5588, ssl_context=context)
-    else:
-        app.run(debug=False, host='0.0.0.0', port=5588)
+    app.run(debug=False, host='0.0.0.0', port=5588)
