@@ -13,12 +13,7 @@ homeassistant:
         author: 'Mattiols'
         expose: &expose
         <<: *customize
-panel_iframe:
-  x8000:
-    title: 'Bticino X8000'
-    icon: mdi:home-thermometer
-    url: '{{ haip | replace ("/callback", "") }}'
-  #### SENSOR MQTT ####
+#### SENSOR MQTT ####
 sensor:
 {% for chrono in j_response -%}
     ### name
