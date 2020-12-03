@@ -63,8 +63,8 @@ sensor:
     entity_id: sensor.termostato_{{ chrono['name'] | replace(" ", "_") }}_state
     state: 'ACTIVE'
     type: time
-    start: '{{ now().replace(hour=0, minute=0, second=0) }}'
-    end: '{{ now() }}'
+    {% raw -%}start: '{{ now().replace(hour=0, minute=0, second=0) }}'{% endraw %}
+    {% raw -%}end: '{{ now() }}'{% endraw %}
 
     ### program
   - platform: mqtt
