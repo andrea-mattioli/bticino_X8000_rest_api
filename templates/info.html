@@ -89,7 +89,7 @@ cards:
         show_empty: false
         state_filter:
           - operator: '!='
-            value: noprint
+            value: None
         entities:
           - entity: sensor.termostato_##name##_humidity
             name: Umidità
@@ -103,6 +103,7 @@ cards:
             name: Mode
           - entity: input_select.##name##_boost_mode
           - entity: sensor.termostato_##name##_boost_mode
+          - entity: sensor.termostato_##name##_activation_time
       - type: thermostat
         entity: climate.##name##
             </code>
