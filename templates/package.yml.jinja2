@@ -6,7 +6,7 @@
 
 #### SENSOR MQTT ####
 sensor:
- - platform: command_line
+  - platform: command_line
     name: smarter_config_size
     command: python3 -c "import os;my_path='/config/.bticino_smarter/smarter.json'; a=True if os.path.exists(my_path) and os.path.getsize(my_path) > 0 else False;print(a)"
 {% for chrono in j_response -%}
