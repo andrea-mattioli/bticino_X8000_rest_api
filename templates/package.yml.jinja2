@@ -59,7 +59,6 @@ sensor:
 
   - platform: history_stats
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_daily_activation
-    icon: mdi:timelapse
     entity_id: sensor.termostato_{{ chrono['name'] | replace(" ", "_") }}_state
     state: 'ACTIVE'
     type: time
