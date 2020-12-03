@@ -4,15 +4,6 @@
 #                                                       #
 #########################################################
 
-homeassistant:
-  customize:
-    package.node_anchors:
-      customize: &customize
-        package: 'Bticino X8000'
-        version: '1.0'
-        author: 'Mattiols'
-        expose: &expose
-        <<: *customize
 #### SENSOR MQTT ####
 sensor:
 {% for chrono in j_response -%}
@@ -118,7 +109,7 @@ sensor:
             {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'BOOST') %}{% endraw %}
             {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
             {% raw -%}    {% else %}{% endraw %}
-            None
+            noprint
             {% raw -%}    {% endif %}{% endraw %}
         icon_template: mdi:progress-clock
     ### PROTECTION time remaining
@@ -128,7 +119,7 @@ sensor:
             {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'PROTECTION') %}{% endraw %}
             {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
             {% raw -%}    {% else %}{% endraw %}
-            None
+            noprint
             {% raw -%}    {% endif %}{% endraw %}
         icon_template: mdi:progress-clock
 {% endfor -%}

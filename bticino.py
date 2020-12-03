@@ -28,27 +28,13 @@ thermo_url=devapi_url+"/chronothermostat/thermoregulation/addressLocation"
 state=randomStringDigits()
 config_file = 'config/config.yml'
 mqtt_config_file = 'config/mqtt_config.yml'
-api_config_file = ''
-tmp_api_config_file = 'config/smarter.json'
-static_api_config_file = '/config/.bticino_smarter/smarter.json'
+api_config_file = '/config/.bticino_smarter/smarter.json'
 package_template = 'templates/package.yml.jinja2'
 package_config_file = '/config/packages/bticino_x8000.yaml'
 flag_connected = 0
 open_list = ["[","{","("] 
 close_list = ["]","}",")"]
 
-def check_config_file():
-    global api_config_file
-    Path("/config/.bticino_smarter/").mkdir(parents=True, exist_ok=True)
-    if not os.path.exists(static_api_config_file) or os.path.getsize(static_api_config_file) == 0:
-       api_config_file = 'config/smarter.json'
-       return True
-    else:
-       api_config_file = '/config/.bticino_smarter/smarter.json'
-       return False
-
-check_config_file()
-    
 with open(config_file, 'r') as f:
     cfg = yaml.safe_load(f)
 client_id=(cfg["api_config"]["client_id"])
@@ -269,7 +255,6 @@ def rest():
 @app.route('/')
 def get_token(my_url=None):
     my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+redirect_code_url
-    #my_url = oauth2_url+"?client_id="+client_id+"&response_type=code"+"&state="+state+"&redirect_uri="+"http://192.168.1.178:5588/callback"
     return render_template('index.html', code_url=my_url)
 
 def get_access_token(code):
@@ -295,10 +280,11 @@ def f_refresh_token():
               }
           try:
             response = requests.request("POST", token_url, data = body)
-            access_token = json.loads(response.text)['access_token']
-            update_api_config_file_access_token(access_token)
-            refresh_token = json.loads(response.text)['refresh_token']
-            update_api_config_file_refresh_token(refresh_token)
+            if response.code == 200:
+               access_token = json.loads(response.text)['access_token']
+               update_api_config_file_access_token(access_token)
+               refresh_token = json.loads(response.text)['refresh_token']
+               update_api_config_file_refresh_token(refresh_token)
           except:
               pass
 
@@ -762,9 +748,6 @@ def callback():
            update_api_config_file_refresh_token(refresh_token)
            update_api_config_file_my_plants(my_plants)
            update_api_config_file_chronothermostats(chronothermostats)
-           if check_config_file():
-              shutil.move(os.path.join(tmp_api_config_file), os.path.join(static_api_config_file))
-           check_config_file()
            my_value_tamplate=rest()
            return render_template('info.html', j_response=my_value_tamplate)
         else:
