@@ -6,6 +6,9 @@
 
 #### SENSOR MQTT ####
 sensor:
+ - platform: command_line
+    name: smarter_config_size
+    command: python3 -c "import os;my_path='/config/.bticino_smarter/smarter.json'; a=True if os.path.exists(my_path) and os.path.getsize(my_path) > 0 else False;print(a)"
 {% for chrono in j_response -%}
     ### name
   - platform: mqtt
@@ -262,6 +265,18 @@ automation:
     - service: shell_command.send_webhooks
       data_template:
         {% raw -%}data: '{{ (trigger.json |tojson) |safe }}'{% endraw %}
+  - id: mattiols_x8000_alert
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: sensor.smarter_config_size
+        to: 'False'
+    condition: []
+    action:
+      - service: notify.persistent_notification
+        data:
+          message: Restart Bticino Addon and click on "get your code"
+          title: ERROR - Bticino Smarter X8000
 shell_command:
   send_webhooks: >
     {% raw -%}curl -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
