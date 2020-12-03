@@ -4,7 +4,7 @@
 #                                                       #
 #########################################################
 
-#### SENSOR MQTT ####
+#### SENSOR ####
 sensor:
   - platform: command_line
     name: smarter_config_size
@@ -56,6 +56,15 @@ sensor:
     state_topic: {{ chrono['mqtt_status_topic'] }}
     {% raw -%}value_template: "{{ value_json.state }}"{% endraw %}
     icon: mdi:power
+
+  - platform: history_stats
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_daily_activation
+    icon: mdi:timelapse
+    entity_id: sensor.termostato_{{ chrono['name'] | replace(" ", "_") }}_state
+    state: 'ACTIVE'
+    type: time
+    start: '{{ now().replace(hour=0, minute=0, second=0) }}'
+    end: '{{ now() }}'
 
     ### program
   - platform: mqtt
@@ -125,6 +134,15 @@ sensor:
             noprint
             {% raw -%}    {% endif %}{% endraw %}
         icon_template: mdi:progress-clock
+    ### Daily Activation Time 
+      termostato_{{ chrono['name'] | replace(" ", "_") }}_activation_time:
+        friendly_name: 'Active Today'
+        value_template: >-
+            {% raw -%}    {% set hours = states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_daily_activation') | float %}{% endraw %}
+            {% raw -%}    {% set minutes = ((hours % 1) * 60) | int %}{% endraw %}  
+            {% raw -%}    {% set hours = (hours - (hours % 1)) | int %}{% endraw %}  
+            {% raw -%}    {{ '%02ih e %02im'%(hours, minutes) }}{% endraw %}
+        icon_template: mdi:timelapse             
 {% endfor -%}
 ### CLIMATE ####
 climate:
