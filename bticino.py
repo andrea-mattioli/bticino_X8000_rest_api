@@ -280,7 +280,7 @@ def f_refresh_token():
               }
           try:
             response = requests.request("POST", token_url, data = body)
-            if response.code == 200:
+            if response.status_code == 200:
                access_token = json.loads(response.text)['access_token']
                update_api_config_file_access_token(access_token)
                refresh_token = json.loads(response.text)['refresh_token']
