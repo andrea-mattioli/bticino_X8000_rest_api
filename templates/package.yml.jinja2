@@ -21,6 +21,7 @@ sensor:
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_temperature
     state_topic: {{ chrono['mqtt_status_topic'] }}
     {% raw -%}value_template: '{{ value_json.temperature }}'{% endraw %}
+    unit_of_measurement: '°C'
     icon: mdi:thermometer
 
     ### uhumidity
