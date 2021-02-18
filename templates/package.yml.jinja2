@@ -291,10 +291,14 @@ automation:
         to: 'False'
     condition: []
     action:
+      - service: hassio.addon_restart
+        data:
+          addon: "d5113cf9_smarter_x8000_v2"
+      - delay: '00:00:30'
       - service: notify.persistent_notification
         data:
-          message: Restart Bticino Addon and click on "get your code"
-          title: ERROR - Bticino Smarter X8000
+          message: The Addon was restarted after crash, check the log for details
+          title: WARNING - Bticino Smarter X8000
 shell_command:
   send_webhooks: >
     {% raw -%}curl -X POST -H 'Content-Type: application/json' -d '{{ data }}' {% endraw %}{{ haip }}
