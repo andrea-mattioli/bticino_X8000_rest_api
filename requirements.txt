@@ -1,4 +1,5 @@
 Flask==1.1.1
+tzdata==2021.1
 requests==2.23.0
 PyYAML==5.4
 apscheduler==3.6.3
