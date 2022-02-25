@@ -1,6 +1,6 @@
-Flask==1.1.1
-requests==2.23.0
-PyYAML==5.4
-APScheduler==3.7.0
-paho-mqtt==1.5.0
-selenium==3.141.0
+Flask
+requests
+PyYAML
+APScheduler
+paho-mqtt
+selenium
