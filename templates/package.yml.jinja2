@@ -22,96 +22,96 @@ mqtt:
   sensor:
 {% for chrono in j_response -%}
     ### name
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_name
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.name }}'{% endraw %}
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_name
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: '{{ value_json.name }}'{% endraw %}
 
     ### temperature
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_temperature
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.temperature }}'{% endraw %}
-    unit_of_measurement: '°C'
-    icon: mdi:thermometer
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_temperature
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: '{{ value_json.temperature }}'{% endraw %}
+      unit_of_measurement: '°C'
+      icon: mdi:thermometer
 
     ### uhumidity
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_humidity
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.humidity|int }}'{% endraw %}
-    unit_of_measurement: '%'
-    icon: mdi:water-percent
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_humidity
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: '{{ value_json.humidity|int }}'{% endraw %}
+      unit_of_measurement: '%'
+      icon: mdi:water-percent
 
     ### function
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_function
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.function }}"{% endraw %}
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_function
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.function }}"{% endraw %}
 
     ### mode
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_mode
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.mode }}"{% endraw %}
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_mode
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.mode }}"{% endraw %}
 
     ### set point
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_set_point
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
-    icon: mdi:thermostat
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_set_point
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
+      icon: mdi:thermostat
 
     ### state
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_state
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.state }}"{% endraw %}
-    icon: mdi:power
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_state
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.state }}"{% endraw %}
+      icon: mdi:power
 
     ### program
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_program
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.program }}"{% endraw %}
-    icon: mdi:calendar-clock
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_program
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.program }}"{% endraw %}
+      icon: mdi:calendar-clock
 
     ### time remainig
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.remaining_time }}"{% endraw %}
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.remaining_time }}"{% endraw %}
     
     ### time remainig minutes
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time_minutes
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.remaining_time_minutes }}"{% endraw %}
+    - name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time_minutes
+      state_topic: {{ chrono['mqtt_status_topic'] }}
+      {% raw -%}value_template: "{{ value_json.remaining_time_minutes }}"{% endraw %}
 {% endfor %}
 ### CLIMATE ####
   climate:
-{% for chrono in j_response %}
-    name: {{ chrono['name'] }}
-    modes:
-      - "off"
-      - "on"
-      - "heat"
-      - "cool"
-    precision: 0.1
-    min_temp: 15
-    max_temp: 35
-    temp_step: 0.5
-    mode_state_topic: "{{ chrono['mqtt_status_topic'] }}"
-    mode_state_template: >{% raw %}
-      {% if value_json.mode.upper() == "OFF" %}
-        off
-      {% elif value_json.mode.upper() == "PROTECTION" %}
-        off
-      {% elif value_json.function.upper() == "HEATING" %}
-        heat
-      {% elif value_json.function.upper() == "COOLING" %}
-        cool
-      {% elif value_json.mode.upper() == "AUTOMATIC" %}
-        on
-      {% elif value_json.mode.upper() == "MANUAL" %}
-        on
-      {% endif %}{% endraw %}
-    mode_command_topic: "{{ chrono['mqtt_cmd_topic'] }}"
-    temperature_state_topic: "{{ chrono['mqtt_status_topic'] }}"
-    {% raw -%}    temperature_state_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
-    temperature_command_topic: "{{ chrono['mqtt_cmd_topic'] }}"
-    current_temperature_topic: "{{ chrono['mqtt_status_topic'] }}"
-    {% raw -%}    current_temperature_template: "{{ value_json.temperature }}"{% endraw %}
+{% for chrono in j_response -%}
+    - name: {{ chrono['name'] }}
+      modes:
+        - "off"
+        - "on"
+        - "heat"
+        - "cool"
+      precision: 0.1
+      min_temp: 15
+      max_temp: 35
+      temp_step: 0.5
+      mode_state_topic: "{{ chrono['mqtt_status_topic'] }}"
+      mode_state_template: >{% raw %}
+        {% if value_json.mode.upper() == "OFF" %}
+          off
+        {% elif value_json.mode.upper() == "PROTECTION" %}
+          off
+        {% elif value_json.function.upper() == "HEATING" %}
+          heat
+        {% elif value_json.function.upper() == "COOLING" %}
+          cool
+        {% elif value_json.mode.upper() == "AUTOMATIC" %}
+          on
+        {% elif value_json.mode.upper() == "MANUAL" %}
+          on
+        {% endif %}{% endraw %}
+      mode_command_topic: "{{ chrono['mqtt_cmd_topic'] }}"
+      temperature_state_topic: "{{ chrono['mqtt_status_topic'] }}"
+      {% raw -%}    temperature_state_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
+      temperature_command_topic: "{{ chrono['mqtt_cmd_topic'] }}"
+      current_temperature_topic: "{{ chrono['mqtt_status_topic'] }}"
+      {% raw -%}    current_temperature_template: "{{ value_json.temperature }}"{% endraw %}
 {% endfor -%}
 template:
   sensors:
