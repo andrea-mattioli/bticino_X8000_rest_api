@@ -10,6 +10,7 @@ sensor:
     name: smarter_config_size
     command: python3 -c "import os;my_path='/config/.bticino_smarter/smarter.json'; a=True if os.path.exists(my_path) and os.path.getsize(my_path) > 0 else False;print(a)"
 {% for chrono in j_response -%}
+### Activity History Stats
   - platform: history_stats
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_daily_activation
     entity_id: sensor.termostato_{{ chrono['name'] | replace(" ", "_") }}_state
@@ -81,6 +82,7 @@ mqtt:
 ### CLIMATE ####
   climate:
 {% for chrono in j_response -%}
+### Thermostat Climate name entity
     - name: {{ chrono['name'] }}
       modes:
         - "off"
