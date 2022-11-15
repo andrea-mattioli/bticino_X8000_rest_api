@@ -10,54 +10,6 @@ sensor:
     name: smarter_config_size
     command: python3 -c "import os;my_path='/config/.bticino_smarter/smarter.json'; a=True if os.path.exists(my_path) and os.path.getsize(my_path) > 0 else False;print(a)"
 {% for chrono in j_response -%}
-    ### name
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_name
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.name }}'{% endraw %}
-
-    ### temperature
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_temperature
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.temperature }}'{% endraw %}
-    unit_of_measurement: '°C'
-    icon: mdi:thermometer
-
-    ### uhumidity
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_humidity
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: '{{ value_json.humidity|int }}'{% endraw %}
-    unit_of_measurement: '%'
-    icon: mdi:water-percent
-
-    ### function
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_function
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.function }}"{% endraw %}
-
-    ### mode
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_mode
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.mode }}"{% endraw %}
-
-    ### set point
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_set_point
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
-    icon: mdi:thermostat
-
-    ### state
-  - platform: mqtt
-    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_state
-    state_topic: {{ chrono['mqtt_status_topic'] }}
-    {% raw -%}value_template: "{{ value_json.state }}"{% endraw %}
-    icon: mdi:power
-
   - platform: history_stats
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_daily_activation
     entity_id: sensor.termostato_{{ chrono['name'] | replace(" ", "_") }}_state
@@ -65,89 +17,70 @@ sensor:
     type: time
     {% raw -%}start: '{{ now().replace(hour=0, minute=0, second=0) }}'{% endraw %}
     {% raw -%}end: '{{ now() }}'{% endraw %}
+{% endfor %}
+mqtt:
+  sensor:
+{% for chrono in j_response -%}
+    ### name
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_name
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: '{{ value_json.name }}'{% endraw %}
+
+    ### temperature
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_temperature
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: '{{ value_json.temperature }}'{% endraw %}
+    unit_of_measurement: '°C'
+    icon: mdi:thermometer
+
+    ### uhumidity
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_humidity
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: '{{ value_json.humidity|int }}'{% endraw %}
+    unit_of_measurement: '%'
+    icon: mdi:water-percent
+
+    ### function
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_function
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: "{{ value_json.function }}"{% endraw %}
+
+    ### mode
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_mode
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: "{{ value_json.mode }}"{% endraw %}
+
+    ### set point
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_set_point
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: "{{ value_json.setpoint|round (1) }}"{% endraw %}
+    icon: mdi:thermostat
+
+    ### state
+    name: termostato_{{ chrono['name'] | replace(" ", "_") }}_state
+    state_topic: {{ chrono['mqtt_status_topic'] }}
+    {% raw -%}value_template: "{{ value_json.state }}"{% endraw %}
+    icon: mdi:power
 
     ### program
-  - platform: mqtt
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_program
     state_topic: {{ chrono['mqtt_status_topic'] }}
     {% raw -%}value_template: "{{ value_json.program }}"{% endraw %}
     icon: mdi:calendar-clock
 
     ### time remainig
-  - platform: mqtt
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time
     state_topic: {{ chrono['mqtt_status_topic'] }}
     {% raw -%}value_template: "{{ value_json.remaining_time }}"{% endraw %}
     
     ### time remainig minutes
-  - platform: mqtt
     name: termostato_{{ chrono['name'] | replace(" ", "_") }}_remaining_time_minutes
     state_topic: {{ chrono['mqtt_status_topic'] }}
     {% raw -%}value_template: "{{ value_json.remaining_time_minutes }}"{% endraw %}
 {% endfor %}
-  - platform: template
-    sensors:
-{% for chrono in j_response -%}    
-    ### Heating-Cooling state 
-      termostato_{{ chrono['name'] | replace(" ", "_") }}_custom_function:
-        value_template: >-
-            {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function') }}{% endraw %}
-        icon_template: >-
-            {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function', 'HEATING') %}{% endraw %}
-               mdi:fire
-            {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function', 'COOLING') %}{% endraw %}
-               mdi:snowflake
-            {% raw -%}    {% endif %}{% endraw %}
-        device_class: power
-    ### Custom_state
-      termostato_{{ chrono['name'] | replace(" ", "_") }}_custom_mode:
-        value_template: >-
-            {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode') }}{% endraw %}
-        icon_template: >-
-            {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'AUTOMATIC') %}{% endraw %}
-               mdi:autorenew
-            {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'MANUAL') %}{% endraw %}
-               mdi:hand-right
-            {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'BOOST') %}{% endraw %}
-               mdi:play-speed
-            {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'PROTECTION') or is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'OFF') %}{% endraw %}
-               mdi:power
-            {% raw -%}    {% endif %}{% endraw %}
-        device_class: power
-    ### BOOS time remaining
-      termostato_{{ chrono['name'] | replace(" ", "_") }}_boost_mode:
-        friendly_name: 'Boost Remainig'
-        value_template: >-
-            {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'BOOST') %}{% endraw %}
-            {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
-            {% raw -%}    {% else %}{% endraw %}
-            noprint
-            {% raw -%}    {% endif %}{% endraw %}
-        icon_template: mdi:progress-clock
-    ### PROTECTION time remaining
-      termostato_{{ chrono['name'] | replace(" ", "_") }}_protection_mode:
-        friendly_name: 'PROTECTION Remainig'
-        value_template: >-
-            {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'PROTECTION') %}{% endraw %}
-            {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
-            {% raw -%}    {% else %}{% endraw %}
-            noprint
-            {% raw -%}    {% endif %}{% endraw %}
-        icon_template: mdi:progress-clock
-    ### Daily Activation Time 
-      termostato_{{ chrono['name'] | replace(" ", "_") }}_activation_time:
-        friendly_name: 'Active Today'
-        value_template: >-
-            {% raw -%}    {% set hours = states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_daily_activation') | float %}{% endraw %}
-            {% raw -%}    {% set minutes = ((hours % 1) * 60) | int %}{% endraw %}  
-            {% raw -%}    {% set hours = (hours - (hours % 1)) | int %}{% endraw %}  
-            {% raw -%}    {{ '%02ih e %02im'%(hours, minutes) }}{% endraw %}
-        icon_template: mdi:timelapse             
-{% endfor -%}
 ### CLIMATE ####
-climate:
+  climate:
 {% for chrono in j_response %}
-  - platform: mqtt
     name: {{ chrono['name'] }}
     modes:
       - "off"
@@ -180,6 +113,66 @@ climate:
     current_temperature_topic: "{{ chrono['mqtt_status_topic'] }}"
     {% raw -%}    current_temperature_template: "{{ value_json.temperature }}"{% endraw %}
 {% endfor -%}
+template:
+  sensors:
+{% for chrono in j_response -%}    
+  ### Heating-Cooling state 
+    termostato_{{ chrono['name'] | replace(" ", "_") }}_custom_function:
+      value_template: >-
+          {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function') }}{% endraw %}
+      icon_template: >-
+          {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function', 'HEATING') %}{% endraw %}
+             mdi:fire
+          {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_function', 'COOLING') %}{% endraw %}
+             mdi:snowflake
+          {% raw -%}    {% endif %}{% endraw %}
+      device_class: power
+  ### Custom_state
+    termostato_{{ chrono['name'] | replace(" ", "_") }}_custom_mode:
+      value_template: >-
+          {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode') }}{% endraw %}
+      icon_template: >-
+          {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'AUTOMATIC') %}{% endraw %}
+             mdi:autorenew
+          {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'MANUAL') %}{% endraw %}
+             mdi:hand-right
+          {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'BOOST') %}{% endraw %}
+             mdi:play-speed
+          {% raw -%}    {% elif is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'PROTECTION') or is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'OFF') %}{% endraw %}
+             mdi:power
+          {% raw -%}    {% endif %}{% endraw %}
+      device_class: power
+  ### BOOS time remaining
+    termostato_{{ chrono['name'] | replace(" ", "_") }}_boost_mode:
+      friendly_name: 'Boost Remainig'
+      value_template: >-
+          {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'BOOST') %}{% endraw %}
+          {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
+          {% raw -%}    {% else %}{% endraw %}
+          noprint
+          {% raw -%}    {% endif %}{% endraw %}
+      icon_template: mdi:progress-clock
+  ### PROTECTION time remaining
+    termostato_{{ chrono['name'] | replace(" ", "_") }}_protection_mode:
+      friendly_name: 'PROTECTION Remainig'
+      value_template: >-
+          {% raw -%}    {% if is_state('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_mode', 'PROTECTION') %}{% endraw %}
+          {% raw -%}    {{ states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_remaining_time') }}{% endraw %}
+          {% raw -%}    {% else %}{% endraw %}
+          noprint
+          {% raw -%}    {% endif %}{% endraw %}
+      icon_template: mdi:progress-clock
+  ### Daily Activation Time 
+    termostato_{{ chrono['name'] | replace(" ", "_") }}_activation_time:
+      friendly_name: 'Active Today'
+      value_template: >-
+          {% raw -%}    {% set hours = states('sensor.termostato_{% endraw %}{{ chrono['name'] | replace(" ", "_") }}{% raw -%}_daily_activation') | float %}{% endraw %}
+          {% raw -%}    {% set minutes = ((hours % 1) * 60) | int %}{% endraw %}  
+          {% raw -%}    {% set hours = (hours - (hours % 1)) | int %}{% endraw %}  
+          {% raw -%}    {{ '%02ih e %02im'%(hours, minutes) }}{% endraw %}
+      icon_template: mdi:timelapse             
+{% endfor -%}
+
 ### INPUT SELECT
 input_select:
 {% for chrono in j_response %}
