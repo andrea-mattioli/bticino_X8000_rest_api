@@ -273,6 +273,7 @@ automation:
     trigger:
     - platform: webhook
       webhook_id: mattiols_x_8000
+      local_only: false
     condition: []
     action:
     - service: shell_command.send_webhooks
